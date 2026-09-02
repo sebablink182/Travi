@@ -6,3 +6,7 @@ seed-data.local.js
 # File di sistema comuni
 .DS_Store
 node_modules/
+
+# Script locali che pubblicano da soli su GitHub + il loro log — servono solo
+# sul PC, non fanno parte dell'app e non vanno pubblicati nel repository
+_tools/
