@@ -26,6 +26,7 @@
     --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --hero-h: 424px;      /* altezza totale della foto in home */
     --hero-sliver: 132px; /* quanto ne resta sempre visibile, incollato in alto, quando si scorre */
+    --hero-bleed: 320px;  /* quanto la foto sbocca oltre il bordo superiore, per il rimbalzo elastico */
   }
   /* Travi keeps questa palette chiara indipendentemente dal tema di sistema —
      è un mondo visivo unico e disegnato, non un'utility light/dark.
@@ -105,7 +106,9 @@
     overflow-y:auto;
     flex:1;
     min-height:0;
-    padding-bottom:112px;
+    padding-bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); /* solo un piccolo margine di
+      respiro: il contenuto deve poter scorrere fin sotto la pillola "glass" (che è semi-trasparente
+      apposta) invece di fermarsi prima lasciando una fascia bianca vuota */
     -webkit-overflow-scrolling:touch;
     overscroll-behavior-y:contain; /* il rimbalzo elastico resta (sta bene), ma non "sfonda" nella pagina sotto */
     scrollbar-width:none; /* Firefox: nessuna barra di scroll visibile */
@@ -143,20 +146,32 @@
     background: #E9A583;
     box-shadow: 0 14px 28px -10px rgba(20,14,10,.28);
   }
-  /* La foto è più alta del riquadro hero e sbocca oltre il bordo superiore
-     (top negativo): a riposo quell'eccedenza sta semplicemente sopra, fuori
-     dall'area visibile del rimbalzo elastico non "sfonda" più nel vuoto
-     bianco, ma continua a mostrare la stessa identica foto (nessun secondo
-     livello/duplicato: è sempre e solo questo elemento, solo più grande). */
+  /* La foto (un unico elemento, mai duplicato) è deliberatamente più grande
+     del riquadro hero e sbocca oltre il bordo superiore di --hero-bleed:
+     "background-size" è un valore fisso (non "cover"), quindi ingrandire il
+     margine di sbocco non forza mai un nuovo ricalcolo dello zoom — la foto
+     resta sempre alla stessa scala. A riposo l'eccedenza sta semplicemente
+     sopra, fuori dallo schermo; durante il rimbalzo elastico si vede lei,
+     non il vuoto bianco. */
   .hero-photo{
-    position:absolute; top:-160px; left:0; right:0; bottom:0;
-    background-size:cover; background-position:center 62%; background-image:url('assets/img/hero.jpg');
+    position:absolute; top: calc(-1 * var(--hero-bleed)); left:0; right:0; bottom:0;
+    background-repeat:no-repeat;
+    background-position: center bottom;
+    background-size: auto calc(var(--hero-h) + var(--hero-bleed));
+    background-image:url('assets/img/hero.jpg');
     border-radius: 0 0 var(--r-xl) var(--r-xl);
   }
+  /* Stessa altezza di sbocco della foto, per non lasciare uno "stacco" netto:
+     sopra al bordo normale della hero resta un tono scuro piatto (uguale al
+     punto più scuro della sfumatura sotto), non un salto da trasparente a
+     scuro. */
   .hero-topfade{
-    position:absolute; z-index:1; top:0; left:0; right:0;
-    height: calc(env(safe-area-inset-top) + 90px);
-    background: linear-gradient(to bottom, rgba(20,14,10,.42), rgba(20,14,10,0));
+    position:absolute; z-index:1; top: calc(-1 * var(--hero-bleed)); left:0; right:0;
+    height: calc(var(--hero-bleed) + env(safe-area-inset-top) + 90px);
+    background: linear-gradient(to bottom,
+      rgba(20,14,10,.42) 0,
+      rgba(20,14,10,.42) var(--hero-bleed),
+      rgba(20,14,10,0) calc(var(--hero-bleed) + env(safe-area-inset-top) + 90px));
     pointer-events:none;
   }
   .hero-topbar{
