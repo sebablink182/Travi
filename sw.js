@@ -5,7 +5,7 @@
 // Il numero nel nome della cache va alzato ogni volta che questo file cambia:
 // è quello che fa sì che una PWA già installata sul telefono butti via la
 // cache vecchia invece di restare bloccata su una copia obsoleta dei file.
-const CACHE_NAME = "travi-shell-v3";
+const CACHE_NAME = "travi-shell-v4";
 const SHELL_FILES = [
   "./",
   "./index.html",
@@ -37,11 +37,14 @@ self.addEventListener("activate", (event) => {
 
 // Strategia:
 // - Firebase/Firestore: sempre in rete, niente cache (i dati devono essere freschi).
-// - Codice dell'app (html/js/css/json, incluso firebase-config.js): "network-first".
-//   Se c'è connessione, prende sempre l'ultima versione pubblicata e aggiorna la
-//   cache di riserva; usa la cache SOLO se il telefono è offline. Questo è ciò che
-//   garantisce che un aggiornamento pubblicato su GitHub Pages arrivi anche a chi
-//   ha già installato l'app in home screen, senza bisogno di reinstallarla.
+// - Codice dell'app (html/js/css/json, incluso firebase-config.js): "network-first"
+//   con { cache: "no-store" } — cruciale: un fetch() normale, anche dentro un
+//   service worker "network-first", rispetta comunque la cache HTTP del browser
+//   (GitHub Pages manda cache-control: max-age=600), quindi senza no-store un
+//   aggiornamento pubblicato poteva restare invisibile fino a 10 minuti anche
+//   con questa strategia — sembrava "non funzionare mai", ma stava solo
+//   rispondendo dalla cache HTTP invece di andare davvero in rete.
+//   Usa la cache della Cache Storage SOLO se il telefono è offline.
 // - Immagini/icone: "cache-first" (cambiano raramente, meglio veloci).
 self.addEventListener("fetch", (event) => {
   const url = event.request.url;
@@ -56,7 +59,7 @@ self.addEventListener("fetch", (event) => {
 
   if (isCode) {
     event.respondWith(
-      fetch(event.request)
+      fetch(event.request, { cache: "no-store" })
         .then((resp) => {
           if (resp && resp.status === 200) {
             const copy = resp.clone();
