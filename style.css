@@ -111,18 +111,6 @@
     scrollbar-width:none; /* Firefox: nessuna barra di scroll visibile */
   }
   .scroll::-webkit-scrollbar{ display:none; } /* Safari/Chrome: nessuna barra di scroll visibile */
-  /* Nella Home, il rimbalzo elastico in cima non deve scoprire un vuoto bianco:
-     lo sfondo del contenitore che scorre è un clone della stessa foto della hero,
-     nella stessa posizione/dimensione — a riposo è invisibile (coperta dalla foto
-     vera sopra), durante il rimbalzo mostra "più foto" invece del vuoto. */
-  #view-home .scroll{
-    background-color: var(--bg);
-    background-image: url('assets/img/hero.jpg');
-    background-repeat: no-repeat;
-    background-position: center 62%;
-    background-size: 100% var(--hero-h);
-    background-attachment: local;
-  }
 
   /* ---------- topbar ---------- */
   /* Usata da Itinerario e Mappa (la Home ha la sua .hero-topbar sopra la foto):
@@ -152,11 +140,19 @@
     z-index:2;
     margin:0; border-radius: 0 0 var(--r-xl) var(--r-xl);
     height: var(--hero-h);
-    overflow:hidden;
     background: #E9A583;
     box-shadow: 0 14px 28px -10px rgba(20,14,10,.28);
   }
-  .hero-photo{ position:absolute; inset:0; width:100%; height:100%; background-size:cover; background-position:center 62%; background-image:url('assets/img/hero.jpg'); }
+  /* La foto è più alta del riquadro hero e sbocca oltre il bordo superiore
+     (top negativo): a riposo quell'eccedenza sta semplicemente sopra, fuori
+     dall'area visibile del rimbalzo elastico non "sfonda" più nel vuoto
+     bianco, ma continua a mostrare la stessa identica foto (nessun secondo
+     livello/duplicato: è sempre e solo questo elemento, solo più grande). */
+  .hero-photo{
+    position:absolute; top:-160px; left:0; right:0; bottom:0;
+    background-size:cover; background-position:center 62%; background-image:url('assets/img/hero.jpg');
+    border-radius: 0 0 var(--r-xl) var(--r-xl);
+  }
   .hero-topfade{
     position:absolute; z-index:1; top:0; left:0; right:0;
     height: calc(env(safe-area-inset-top) + 90px);
@@ -191,6 +187,7 @@
   .hero-botfade{
     position:absolute; z-index:1; left:0; right:0; bottom:0; height:58%;
     background: linear-gradient(to top, rgba(38,22,26,.6), rgba(38,22,26,0) 88%);
+    border-radius: 0 0 var(--r-xl) var(--r-xl);
     pointer-events:none;
   }
   /* Il blocco di testo ha sia un top che un bottom fissi (quindi un'altezza
@@ -349,17 +346,6 @@
     display:flex; justify-content:center;
     pointer-events:none;
   }
-  /* Dietro alla pillola, una sfumatura verso il colore di sfondo che arriva fino al
-     fondo reale dello schermo (safe-area inclusa): lo spazio sotto l'ultimo
-     contenuto non è più un rettangolo vuoto "a caso", ma un fondo che sfuma via
-     dietro al menu, come nelle app native. */
-  .tabbar::before{
-    content:""; position:absolute; z-index:-1;
-    left:0; right:0; top:-100px; bottom: calc(-24px - env(safe-area-inset-bottom));
-    background: linear-gradient(to bottom, rgba(250,250,249,0), var(--bg) 62%);
-    pointer-events:none;
-  }
-  :root[data-theme="dark"] .tabbar::before{ background: linear-gradient(to bottom, rgba(22,22,22,0), var(--bg) 62%); }
   .tabbar-inner{
     pointer-events:auto;
     display:flex; gap:2px;
@@ -368,7 +354,6 @@
     -webkit-backdrop-filter: blur(38px) saturate(220%);
     border: 1px solid rgba(255,255,255,.22);
     border-radius: var(--r-pill); padding:6px;
-    box-shadow: 0 1px 1px rgba(255,255,255,.12) inset, 0 14px 30px -8px rgba(0,0,0,.32), 0 28px 56px -12px rgba(0,0,0,.26);
   }
   :root[data-theme="dark"] .tabbar-inner{ background: rgba(10,9,7,.26); }
   .tab{
