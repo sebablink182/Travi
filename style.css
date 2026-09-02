@@ -74,8 +74,13 @@
   }
 
   /* ---------- app shell ---------- */
+  /* Altezza in "height:100%" (non vh/dvh): body è già ancorato in modo esatto
+     al viewport reale con position:fixed + inset:0, quindi ereditare da lì
+     evita i bug di calcolo di vh/dvh nella PWA installata standalone su iOS
+     (che potevano lasciare una fascia vuota in fondo, sempre della stessa
+     altezza, su ogni pagina — non era la pillola né il padding dello scroll). */
   .stage{
-    height:100vh; height:100dvh;
+    height:100%;
     display:flex;
     justify-content:center;
     background: var(--bg-2);
@@ -96,7 +101,7 @@
   }
   @media (max-width:560px){
     .stage{ padding:0; }
-    .shell{ border-radius:0; height:100vh; height:100dvh; box-shadow:none; max-width:100%; }
+    .shell{ border-radius:0; height:100%; box-shadow:none; max-width:100%; }
   }
 
   .view{ display:none; flex:1; flex-direction:column; min-height:0; }
