@@ -1,0 +1,8 @@
+# Contiene i dati veri del viaggio (nomi, hotel, date, note) — non va MAI
+# pubblicato in un repository pubblico. Va tenuto solo in locale, sullo
+# stesso computer/telefono da cui aprite admin-seed.html una tantum.
+seed-data.local.js
+
+# File di sistema comuni
+.DS_Store
+node_modules/

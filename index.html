@@ -1,0 +1,227 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<title>Travi</title>
+<meta name="description" content="Il vostro compagno di viaggio per il honeymoon in Giappone">
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#F7F1E6">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Travi">
+<link rel="apple-touch-icon" href="icons/apple-touch-icon.png">
+<link rel="icon" href="icons/icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..620&family=Fraunces:ital,opsz,wght@1,9..144,380..560&display=swap">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <div id="login-gate">
+    <div class="login-card">
+      <div class="brand"><svg><use href="#ic-torii"/></svg><span>Travi</span></div>
+      <div class="login-sub">Il vostro compagno di viaggio in Giappone</div>
+      <form id="login-form">
+        <div class="field"><label>Email</label><input type="email" id="login-email" autocomplete="username" required></div>
+        <div class="field"><label>Password</label><input type="password" id="login-password" autocomplete="current-password" required></div>
+        <div id="login-error"></div>
+        <button type="submit" id="login-submit">Accedi</button>
+      </form>
+      <div class="login-note">Il primo accesso su questo telefono richiede utente e password. In seguito questo dispositivo resterà riconosciuto automaticamente.</div>
+    </div>
+  </div>
+
+<div id="app-root" hidden>
+<svg width="0" height="0" style="position:absolute">
+<svg width="0" height="0" style="position:absolute">
+  <symbol id="ic-home" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 12 4l8 7.5"/><path d="M6 10v9h12v-9"/></symbol>
+  <symbol id="ic-list" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6h10M9 12h10M9 18h10"/><circle cx="4.5" cy="6" r="1.3" fill="currentColor" stroke="none"/><circle cx="4.5" cy="12" r="1.3" fill="currentColor" stroke="none"/><circle cx="4.5" cy="18" r="1.3" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ic-map" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M9 4 3 6.5v14L9 18l6 2.5L21 18V4l-6 2.5L9 4Z"/><path d="M9 4v14M15 6.5v14"/></symbol>
+  <symbol id="ic-plus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></symbol>
+  <symbol id="ic-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 6l6 6-6 6"/></symbol>
+  <symbol id="ic-torii" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7h18M4.5 7 3 5M19.5 7 21 5M6 7v13M18 7v13M4 11h16"/></symbol>
+  <symbol id="ic-search" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><circle cx="10.5" cy="10.5" r="6.5"/><path d="m20 20-4.8-4.8"/></symbol>
+  <symbol id="ic-sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round"><circle cx="12" cy="12" r="4.2"/><path d="M12 2.5v2.6M12 18.9v2.6M4.6 4.6l1.8 1.8M17.6 17.6l1.8 1.8M2.5 12h2.6M18.9 12h2.6M4.6 19.4l1.8-1.8M17.6 6.4l1.8-1.8"/></symbol>
+  <symbol id="ic-walk" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><circle cx="13" cy="4.5" r="1.6" fill="currentColor" stroke="none"/><path d="M10 8.5 8 14l1.5 1.2L8 20M10 8.5l3.4-1 2 3 3 1.6M13.4 10.5 12 15l3 5M13.4 10.5 11 13.5"/></symbol>
+  <symbol id="ic-train" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="6" y="3.5" width="12" height="13" rx="3"/><path d="M6 12h12M9 16l-2.5 4M15 16l2.5 4"/><circle cx="9.3" cy="8.5" r=".9" fill="currentColor" stroke="none"/><circle cx="14.7" cy="8.5" r=".9" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ic-bus" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><rect x="4" y="5" width="16" height="11" rx="2.4"/><path d="M4 12h16M7.5 16v2.4M16.5 16v2.4"/><circle cx="8" cy="9" r=".9" fill="currentColor" stroke="none"/><circle cx="16" cy="9" r=".9" fill="currentColor" stroke="none"/></symbol>
+  <symbol id="ic-car" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4.5 15.5 6 10a2 2 0 0 1 1.9-1.4h8.2A2 2 0 0 1 18 10l1.5 5.5"/><rect x="3.5" y="15.5" width="17" height="4" rx="1.3"/><circle cx="7.5" cy="19.5" r="1.3"/><circle cx="16.5" cy="19.5" r="1.3"/></symbol>
+  <symbol id="ic-temple" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 4 8h16L12 3Z"/><path d="M5 8v11h14V8M9 19v-5h6v5"/></symbol>
+  <symbol id="ic-leaf" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19c8-1 12-6 13.5-14C10.5 6 5.5 10 5 19Z"/><path d="M6 18c3-4 6-7 12-13"/></symbol>
+  <symbol id="ic-bowl" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3.5 11h17a1 1 0 0 1 1 1.2C20.7 16.6 16.9 20 12 20s-8.7-3.4-9.5-7.8a1 1 0 0 1 1-1.2Z"/><path d="M9 11c0-2.5 1-4.5 3-6 2 1.5 3 3.5 3 6"/></symbol>
+  <symbol id="ic-bag" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6 8h12l1 12H5L6 8Z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></symbol>
+  <symbol id="ic-view" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18 9 8l4 6 2-3 6 7Z"/><circle cx="7" cy="6.5" r="1.6"/></symbol>
+  <symbol id="ic-star" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 2.6 5.9L21 9.6l-4.8 4.2L17.6 21 12 17.6 6.4 21l1.4-7.2L3 9.6l6.4-.7L12 3Z"/></symbol>
+  <symbol id="ic-bed" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M3 18v-7a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v7M3 15.5h18M3 18v2M21 18v2"/><path d="M6 9V6a1 1 0 0 1 1-1h3a1 1 0 0 1 1 1v3"/></symbol>
+  <symbol id="ic-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-12A7 7 0 0 0 5 9c0 5.6 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></symbol>
+  <symbol id="ic-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a8 8 0 0 1 14-4.9M20 14a8 8 0 0 1-14 4.9"/><path d="M17.5 3.5 18 8l-4.4-.7M6.5 20.5 6 16l4.4.7"/></symbol>
+  <symbol id="ic-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6.5 7l1 13h9l1-13"/></symbol>
+</svg>
+</svg>
+
+<div class="stage">
+  <div class="shell">
+
+    <!-- HOME -->
+    <div class="view active" id="view-home">
+      <div class="scroll">
+        <div class="hero" id="home-hero">
+          <div class="hero-photo" id="hero-photo"></div>
+          <div class="hero-topfade"></div>
+          <div class="hero-topbar">
+            <div class="brand"><svg><use href="#ic-torii"/></svg><span>Travi</span></div>
+            <div class="icon-btn glass"><svg><use href="#ic-search"/></svg></div>
+          </div>
+          <div class="weather-pill">
+            <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="#C1652F" stroke-width="1.5"><use href="#ic-sun"/></svg>
+            <div><span class="t">18–23°</span><span class="cap">clima tipico · maggio</span></div>
+          </div>
+          <div class="hero-botfade"></div>
+          <div class="hero-scrim">
+            <div class="hero-eyebrow" id="hero-phase">Honeymoon in Japan</div>
+            <h1 class="hero-city" id="hero-city">Tokyo</h1>
+            <div class="hero-date" id="hero-date">–</div>
+            <div class="hero-count">
+              <div class="big num" id="hero-big">–</div>
+              <div class="lbl" id="hero-lbl">Sto calcolando il conto alla rovescia…</div>
+            </div>
+          </div>
+        </div>
+
+        <div class="next-card" id="next-card">
+          <div class="glyph" id="next-glyph"><svg><use href="#ic-star"/></svg></div>
+          <div class="body">
+            <div class="eyebrow">Prossima tappa</div>
+            <div class="title" id="next-title">–</div>
+            <div class="meta" id="next-meta">–</div>
+          </div>
+          <svg class="chev" width="18" height="18"><use href="#ic-chev"/></svg>
+        </div>
+
+        <div class="home-section">
+          <h2>Oggi in itinerario</h2>
+          <div class="progress-row">
+            <div class="top">
+              <div class="n num" id="home-count">0 <small>luoghi</small></div>
+              <div class="n num" id="home-pct" style="color:var(--text-muted); font-size:.8rem;">0%</div>
+            </div>
+            <div class="bar"><span id="home-bar" style="width:0%"></span></div>
+          </div>
+        </div>
+
+        <div class="home-section">
+          <h2>Il viaggio in breve</h2>
+          <div class="progress-row" style="display:flex; justify-content:space-around; text-align:center; padding:18px 8px;">
+            <div><div class="display" style="font-size:1.4rem;">14</div><div style="font-size:.7rem;color:var(--text-muted)">giorni</div></div>
+            <div><div class="display" style="font-size:1.4rem;">6</div><div style="font-size:.7rem;color:var(--text-muted)">città</div></div>
+            <div><div class="display" style="font-size:1.4rem;" id="home-stops-total">–</div><div style="font-size:.7rem;color:var(--text-muted)">tappe</div></div>
+          </div>
+        </div>
+
+        <div class="home-section" style="margin-bottom:24px;">
+          <h2>Budget extra</h2>
+          <div class="progress-row" id="budget-summary-card" style="cursor:pointer;">
+            <div class="top">
+              <div class="n num" id="budget-total-home">€0</div>
+              <div class="n num" style="color:var(--text-muted); font-size:.8rem;" id="budget-count-home">0 spese</div>
+            </div>
+            <div style="font-size:.76rem; color:var(--text-muted); margin-top:8px;">Spese extra non incluse nel preventivo — tocca per gestirle</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ITINERARIO -->
+    <div class="view" id="view-itinerario">
+      <div class="scroll">
+        <div class="topbar">
+          <span class="display" style="font-size:1.25rem;">Itinerario</span>
+          <div class="icon-btn"><svg><use href="#ic-search"/></svg></div>
+        </div>
+        <div class="dayrow" id="dayrow-itin"></div>
+        <div class="city-heading"><h2 id="itin-city">–</h2><span id="itin-theme"></span></div>
+        <div class="stoplist" id="stoplist"></div>
+        <button class="addbar" id="btn-add-stop"><svg width="14" height="14"><use href="#ic-plus"/></svg> Aggiungi tappa</button>
+        <button class="recalc" id="btn-recalc"><svg width="15" height="15"><use href="#ic-refresh"/></svg> Ricalcola giornata</button>
+      </div>
+    </div>
+
+    <!-- MAPPA -->
+    <div class="view" id="view-mappa">
+      <div class="scroll">
+        <div class="topbar">
+          <span class="display" style="font-size:1.25rem;">Mappa</span>
+          <div class="icon-btn"><svg><use href="#ic-search"/></svg></div>
+        </div>
+        <div class="dayrow" id="dayrow-map"></div>
+        <div class="mapwrap"><iframe id="map-embed" width="100%" height="260" style="border:0;display:block;" loading="lazy" referrerpolicy="no-referrer-when-downgrade"></iframe></div>
+        <div class="maplist" id="maplist" style="margin-bottom:20px;"></div>
+      </div>
+    </div>
+
+    <div class="tabbar">
+      <div class="tabbar-inner">
+        <button class="tab active" data-view="home"><svg><use href="#ic-home"/></svg>Home</button>
+        <button class="tab" data-view="itinerario"><svg><use href="#ic-list"/></svg>Itinerario</button>
+        <button class="tab" data-view="mappa"><svg><use href="#ic-map"/></svg>Mappa</button>
+      </div>
+    </div>
+
+    <button class="fab" id="fab-add" style="display:none;"><svg><use href="#ic-plus"/></svg></button>
+  </div>
+</div>
+
+<div class="backdrop" id="backdrop"></div>
+<div class="sheet" id="sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong id="sheet-title" style="font-family:var(--font-display); font-size:1.05rem;">Tappa</strong>
+    <button class="x" id="sheet-close">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="lock-note" id="lock-note" hidden>🔒 Confermato dall'agenzia — bloccato in questa fase per evitare modifiche accidentali. Se cambia data/orario, parlatene insieme e sbloccatelo da qui in futuro.</div>
+    <div class="field"><label>Titolo</label><input type="text" id="f-title" placeholder="Es. Fushimi Inari Taisha"></div>
+    <div class="field"><label>Zona / città</label><input type="text" id="f-sub" placeholder="Es. Fushimi, Kyoto"></div>
+    <div class="field"><label>Categoria</label><div class="pickrow" id="f-category"></div></div>
+    <div class="row2">
+      <div class="field"><label>Orario</label><input type="time" id="f-time"></div>
+      <div class="field"><label>Durata (min)</label><input type="number" id="f-duration" min="0" step="5"></div>
+    </div>
+    <div class="field"><label>Trasporto verso la prossima tappa</label><div class="pickrow" id="f-transport"></div></div>
+    <div class="field"><label>Tempo di spostamento (min, stima)</label><input type="number" id="f-travel" min="0" step="1"></div>
+    <div class="field"><label>Note</label><textarea id="f-notes" placeholder="Consigli, orari di apertura, promemoria…"></textarea></div>
+    <div class="donetoggle"><span>Segna come completata</span><div class="switch" id="f-done"><div class="knob"></div></div></div>
+    <div class="sheet-actions">
+      <button class="btn danger" id="btn-delete">Elimina</button>
+      <button class="btn primary" id="btn-save">Salva</button>
+    </div>
+  </div>
+</div>
+<div class="sheet" id="budget-sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong style="font-family:var(--font-display); font-size:1.05rem;">Budget extra</strong>
+    <button class="x" id="budget-close">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="budget-total" id="budget-total">€0</div>
+    <div class="budget-list" id="budget-list"></div>
+    <div class="field"><label>Cosa</label><input type="text" id="bg-title" placeholder="Es. Souvenir a Nakamise-dori"></div>
+    <div class="row2">
+      <div class="field"><label>Importo (€)</label><input type="number" id="bg-amount" min="0" step="0.01" placeholder="0.00"></div>
+      <div class="field"><label>Chi paga</label><div class="pickrow" id="bg-who"></div></div>
+    </div>
+    <div class="sheet-actions">
+      <button class="btn primary" id="btn-budget-add" style="width:100%;">Aggiungi spesa</button>
+    </div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+
+
+  <div class="signout-link" id="signout-link">Esci da questo dispositivo</div>
+</div>
+
+<script type="module" src="js/app.js"></script>
+</body>
+</html>

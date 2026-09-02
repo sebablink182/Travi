@@ -1,0 +1,13 @@
+rules_version = '2';
+
+// Regole di sicurezza per Travi.
+// Un solo login condiviso: chiunque sia autenticato (voi due) può leggere e
+// scrivere i dati del viaggio. Chi non ha effettuato l'accesso non può
+// leggere nulla, nemmeno aprendo direttamente l'URL del sito.
+service cloud.firestore {
+  match /databases/{database}/documents {
+    match /travi/{document=**} {
+      allow read, write: if request.auth != null;
+    }
+  }
+}

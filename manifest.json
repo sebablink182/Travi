@@ -1,0 +1,17 @@
+{
+  "name": "Travi — Il vostro viaggio in Giappone",
+  "short_name": "Travi",
+  "description": "Compagno di viaggio per il honeymoon in Giappone",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#F7F1E6",
+  "theme_color": "#F7F1E6",
+  "lang": "it",
+  "icons": [
+    { "src": "icons/icon-192.png", "sizes": "192x192", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512.png", "sizes": "512x512", "type": "image/png", "purpose": "any" },
+    { "src": "icons/icon-512-maskable.png", "sizes": "512x512", "type": "image/png", "purpose": "maskable" }
+  ]
+}

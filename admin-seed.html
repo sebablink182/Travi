@@ -1,0 +1,54 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Travi — Caricamento dati (una tantum)</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,380..620&display=swap">
+<link rel="stylesheet" href="style.css">
+<style>
+  body{ background:var(--bg); color:var(--text); font-family:var(--font-ui); }
+  .wrap{ max-width:480px; margin:40px auto; padding:0 20px 60px; }
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:20px; padding:26px; margin-bottom:16px; }
+  h1{ font-family:var(--font-display); font-size:1.4rem; margin:0 0 6px; }
+  p{ font-size:.88rem; color:var(--text-muted); line-height:1.5; }
+  button{ width:100%; padding:13px; border:none; border-radius:14px; background:var(--accent); color:var(--accent-ink); font-size:.95rem; font-weight:600; cursor:pointer; margin-top:10px; }
+  button:disabled{ opacity:.5; }
+  #status{ font-size:.85rem; margin-top:14px; white-space:pre-wrap; }
+  input{ width:100%; box-sizing:border-box; padding:11px 13px; border-radius:12px; border:1px solid var(--border); background:var(--bg); font-size:.95rem; margin-bottom:10px; }
+  .warn{ background:#FBEFE3; border:1px solid #E7B978; padding:12px 14px; border-radius:14px; font-size:.8rem; color:#7A4A12; margin-bottom:16px; }
+  .removed-row{ display:flex; align-items:center; justify-content:space-between; gap:10px; padding:10px 0; border-bottom:1px solid var(--border); font-size:.85rem; }
+  .removed-row:last-child{ border-bottom:none; }
+  .removed-row button{ width:auto; margin-top:0; padding:8px 12px; font-size:.8rem; background:var(--good); }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="warn">⚠️ Questa pagina serve solo a voi due, una volta sola (o quando aggiornate i dati di base). Non è collegata dall'app e non va condivisa. <code>seed-data.local.js</code> non deve mai finire nel repository pubblico — è già escluso dal <code>.gitignore</code>.</div>
+  <div class="card">
+    <h1>Travi — Caricamento dati</h1>
+    <p>Accedete con le stesse credenziali dell'app, poi premete il pulsante per scrivere l'itinerario reale (da <code>seed-data.local.js</code>) dentro Firestore.</p>
+    <div id="login-block">
+      <input type="email" id="email" placeholder="Email" autocomplete="username">
+      <input type="password" id="password" placeholder="Password" autocomplete="current-password">
+      <button id="btn-login">Accedi</button>
+    </div>
+    <div id="seed-block" hidden>
+      <p>Accesso effettuato come <b id="whoami"></b>.</p>
+      <button id="btn-check">1. Controlla cosa c'è già su Firestore</button>
+      <button id="btn-seed">2. Carica/aggiorna l'itinerario da seed-data.local.js</button>
+      <div id="status"></div>
+    </div>
+  </div>
+  <div class="card" id="restore-card" hidden>
+    <h1>Tappe rimosse per sbaglio</h1>
+    <p>Se avete cancellato per errore una tappa dall'app (es. un volo), non è persa: resta "nascosta" e potete farla ricomparire da qui, senza toccare il resto dei vostri dati.</p>
+    <button id="btn-list-removed">3. Mostra le tappe attualmente rimosse</button>
+    <div id="removed-list"></div>
+  </div>
+</div>
+
+<script src="seed-data.local.js"></script>
+<script type="module" src="js/admin-seed.js"></script>
+</body>
+</html>
