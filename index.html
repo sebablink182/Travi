@@ -3,6 +3,23 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
+<script>
+  // Altezza reale dello schermo, misurata da JS invece che affidata a vh/dvh/%:
+  // in una PWA installata su iOS il calcolo nativo di queste unità può risultare
+  // leggermente più corto dell'area davvero visibile, lasciando una fascia vuota
+  // fissa in fondo. Misurando qui (prima che la pagina venga disegnata) e ad ogni
+  // resize/rotazione, l'altezza usata da .stage è sempre quella vera del device.
+  (function () {
+    function setAppVh() {
+      var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
+      document.documentElement.style.setProperty("--app-vh", h + "px");
+    }
+    setAppVh();
+    window.addEventListener("resize", setAppVh);
+    window.addEventListener("orientationchange", setAppVh);
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", setAppVh);
+  })();
+</script>
 <title>Travi</title>
 <meta name="description" content="Il vostro compagno di viaggio per il honeymoon in Giappone">
 <link rel="manifest" href="manifest.json">

@@ -74,13 +74,14 @@
   }
 
   /* ---------- app shell ---------- */
-  /* Altezza in "height:100%" (non vh/dvh): body è già ancorato in modo esatto
-     al viewport reale con position:fixed + inset:0, quindi ereditare da lì
-     evita i bug di calcolo di vh/dvh nella PWA installata standalone su iOS
-     (che potevano lasciare una fascia vuota in fondo, sempre della stessa
-     altezza, su ogni pagina — non era la pillola né il padding dello scroll). */
+  /* Altezza presa da --app-vh, misurata in JS con window.innerHeight/visualViewport
+     (vedi lo script in <head>) invece che da vh/dvh/percentuali: in una PWA
+     installata su iOS quei calcoli nativi possono risultare più corti dell'area
+     davvero visibile, lasciando una fascia vuota fissa in fondo, su ogni pagina —
+     non era la pillola né il padding dello scroll. 100% resta come fallback per il
+     brevissimo istante prima che lo script giri (o se JS è disabilitato). */
   .stage{
-    height:100%;
+    height: var(--app-vh, 100%);
     display:flex;
     justify-content:center;
     background: var(--bg-2);
