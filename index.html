@@ -23,7 +23,7 @@
 <title>Travi</title>
 <meta name="description" content="Il vostro compagno di viaggio per il honeymoon in Giappone">
 <link rel="manifest" href="manifest.json">
-<meta name="theme-color" content="#F7F1E6">
+<meta name="theme-color" content="#FAFAF9">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <meta name="apple-mobile-web-app-title" content="Travi">
@@ -240,5 +240,66 @@
 </div>
 
 <script type="module" src="js/app.js"></script>
+<script>
+  // Pannello diagnostico TEMPORANEO per capire la banda bianca in fondo — si
+  // toglie appena trovata la causa. Mostra i numeri reali direttamente sullo
+  // schermo, così non serve collegare l'iPhone a un computer per leggerli.
+  // Resta nascosto durante l'uso normale: si attiva solo aggiungendo ?debug=1
+  // all'indirizzo, per non intralciare il test della vera correzione qui sotto
+  // (sfondo di <html> impostato in style.css).
+  (function () {
+    if (location.search.indexOf("debug=1") === -1) return;
+    function px(v) { return Math.round(v) + "px"; }
+    function rectOf(sel) {
+      var el = document.querySelector(sel);
+      if (!el) return sel + ": non trovato";
+      var r = el.getBoundingClientRect();
+      return sel + ": top " + px(r.top) + " / bottom " + px(r.bottom) + " / h " + px(r.height);
+    }
+    function safeAreaBottom() {
+      var probe = document.createElement("div");
+      probe.style.paddingBottom = "env(safe-area-inset-bottom)";
+      probe.style.position = "absolute";
+      probe.style.visibility = "hidden";
+      document.body.appendChild(probe);
+      var v = getComputedStyle(probe).paddingBottom;
+      document.body.removeChild(probe);
+      return v;
+    }
+    function render() {
+      var hud = document.getElementById("debug-hud");
+      if (!hud) return;
+      var lines = [
+        "innerHeight: " + window.innerHeight,
+        "visualViewport.h: " + (window.visualViewport ? Math.round(window.visualViewport.height) : "n/a"),
+        "docEl.clientHeight: " + document.documentElement.clientHeight,
+        "safe-area-bottom: " + safeAreaBottom(),
+        rectOf(".stage"),
+        rectOf(".shell"),
+        rectOf(".view.active"),
+        rectOf(".view.active .scroll"),
+        rectOf(".tabbar"),
+      ];
+      hud.textContent = lines.join("\n");
+    }
+    function mount() {
+      if (document.getElementById("debug-hud")) return;
+      var hud = document.createElement("pre");
+      hud.id = "debug-hud";
+      hud.style.cssText =
+        "position:fixed; left:6px; top:6px; z-index:99999; margin:0; padding:8px 10px;" +
+        "background:rgba(0,0,0,.82); color:#7CFC9A; font:10px/1.5 'SF Mono', Menlo, monospace;" +
+        "border-radius:8px; max-width:94vw; white-space:pre-wrap; pointer-events:none;";
+      document.body.appendChild(hud);
+      render();
+    }
+    document.addEventListener("DOMContentLoaded", mount);
+    window.addEventListener("load", mount);
+    window.addEventListener("resize", render);
+    window.addEventListener("orientationchange", render);
+    if (window.visualViewport) window.visualViewport.addEventListener("resize", render);
+    setInterval(render, 1000);
+  })();
+</script>
 </body>
 </html>

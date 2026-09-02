@@ -49,6 +49,12 @@
     overflow:hidden;
     touch-action:pan-y; /* niente pinch-zoom / doppio-tap-zoom in giro per l'app */
     overscroll-behavior:none;
+    background: var(--bg); /* fondamentale in una PWA iOS standalone: senza questo
+      l'elemento html è trasparente/bianco di default, e la WKWebView di iOS
+      dipinge il proprio sfondo (bianco) sotto/oltre il body — è esattamente
+      la striscia bianca fissa in fondo che tagliava le card, su ogni pagina,
+      indipendente da vh/dvh, padding o cache: non era un problema di altezza
+      calcolata ma di colore di sfondo mai impostato su html. */
   }
   body{
     background: var(--bg);
