@@ -244,11 +244,10 @@
   // Pannello diagnostico TEMPORANEO per capire la banda bianca in fondo — si
   // toglie appena trovata la causa. Mostra i numeri reali direttamente sullo
   // schermo, così non serve collegare l'iPhone a un computer per leggerli.
-  // Resta nascosto durante l'uso normale: si attiva solo aggiungendo ?debug=1
-  // all'indirizzo, per non intralciare il test della vera correzione qui sotto
-  // (sfondo di <html> impostato in style.css).
+  // (Niente gate su ?debug=1: l'app aperta dall'icona in Home non ha una barra
+  // indirizzo da modificare, quindi qui il pannello è sempre visibile finché
+  // non troviamo la causa — poi lo tolgo.)
   (function () {
-    if (location.search.indexOf("debug=1") === -1) return;
     function px(v) { return Math.round(v) + "px"; }
     function rectOf(sel) {
       var el = document.querySelector(sel);
@@ -266,19 +265,43 @@
       document.body.removeChild(probe);
       return v;
     }
+    function describeElAt(x, y) {
+      var el = document.elementFromPoint(x, y);
+      if (!el) return "(x" + Math.round(x) + ",y" + Math.round(y) + "): nessun elemento";
+      var tag = el.tagName.toLowerCase();
+      var id = el.id ? "#" + el.id : "";
+      var cls = el.className && typeof el.className === "string" ? "." + el.className.trim().replace(/\s+/g, ".") : "";
+      var bg = getComputedStyle(el).backgroundColor;
+      return "(x" + Math.round(x) + ",y" + Math.round(y) + "): " + tag + id + cls + " bg=" + bg;
+    }
+    function bgOf(sel) {
+      var el = document.querySelector(sel);
+      if (!el) return sel + ": non trovato";
+      return sel + " bg: " + getComputedStyle(el).backgroundColor;
+    }
     function render() {
       var hud = document.getElementById("debug-hud");
       if (!hud) return;
+      var w = window.innerWidth, h = window.innerHeight;
+      var scrollEl = document.querySelector(".view.active .scroll");
       var lines = [
-        "innerHeight: " + window.innerHeight,
+        "innerHeight: " + h + "  innerWidth: " + w,
         "visualViewport.h: " + (window.visualViewport ? Math.round(window.visualViewport.height) : "n/a"),
         "docEl.clientHeight: " + document.documentElement.clientHeight,
         "safe-area-bottom: " + safeAreaBottom(),
+        bgOf("html"),
+        bgOf("body"),
+        bgOf(".stage"),
+        bgOf(".shell"),
         rectOf(".stage"),
         rectOf(".shell"),
         rectOf(".view.active"),
         rectOf(".view.active .scroll"),
         rectOf(".tabbar"),
+        "scroll scrollH: " + (scrollEl ? scrollEl.scrollHeight : "n/a") + " clientH: " + (scrollEl ? scrollEl.clientHeight : "n/a"),
+        "punto fondo schermo " + describeElAt(w / 2, h - 3),
+        "punto 40px sopra fondo " + describeElAt(w / 2, h - 43),
+        "punto 90px sopra fondo " + describeElAt(w / 2, h - 93),
       ];
       hud.textContent = lines.join("\n");
     }
@@ -287,9 +310,9 @@
       var hud = document.createElement("pre");
       hud.id = "debug-hud";
       hud.style.cssText =
-        "position:fixed; left:6px; top:6px; z-index:99999; margin:0; padding:8px 10px;" +
-        "background:rgba(0,0,0,.82); color:#7CFC9A; font:10px/1.5 'SF Mono', Menlo, monospace;" +
-        "border-radius:8px; max-width:94vw; white-space:pre-wrap; pointer-events:none;";
+        "position:fixed; left:4px; top:4px; z-index:99999; margin:0; padding:6px 8px;" +
+        "background:rgba(0,0,0,.85); color:#7CFC9A; font:9px/1.45 'SF Mono', Menlo, monospace;" +
+        "border-radius:8px; max-width:96vw; white-space:pre-wrap; pointer-events:none;";
       document.body.appendChild(hud);
       render();
     }
