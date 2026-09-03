@@ -423,12 +423,17 @@
   .tabbar-inner{
     pointer-events:auto;
     display:flex; gap:2px;
-    /* Vetro: velo scuro leggero + sfocatura meno spinta di prima, così sotto si
-       intravede davvero il contenuto che scorre invece di essere solo un colore. */
-    background: rgba(30,30,32,.13);
-    backdrop-filter: blur(24px) saturate(200%);
-    -webkit-backdrop-filter: blur(24px) saturate(200%);
-    border: 1px solid rgba(255,255,255,.30);
+    /* Vetro CHIARO (non più un velo scuro): il velo bianco tiene la pillola sempre
+       più chiara di ciò che le scorre sotto, così le voci in grigio scuro restano
+       leggibili qualunque cosa passi — foto, mappa o card bianche. Con un velo
+       scuro e testo bianco succedeva il contrario: sopra i contenuti chiari, che
+       nell'app sono la maggior parte, il testo spariva.
+       La sfocatura resta bassa (24px) perché è quella che fa "intravedere" le
+       forme sotto invece di ridurle a una macchia di colore. */
+    background: rgba(255,255,255,.55);
+    backdrop-filter: blur(24px) saturate(180%);
+    -webkit-backdrop-filter: blur(24px) saturate(180%);
+    border: 1px solid rgba(255,255,255,.65);
     border-radius: var(--r-pill); padding:6px;
     /* L'ombra che la stacca dal contenuto: una diffusa e larga per il distacco,
        una corta e stretta subito sotto il bordo per farla "appoggiare". */
@@ -436,12 +441,16 @@
       0 12px 32px -8px rgba(20,14,10,.34),
       0 3px 8px -2px rgba(20,14,10,.14);
   }
-  :root[data-theme="dark"] .tabbar-inner{ background: rgba(10,9,7,.26); }
+  :root[data-theme="dark"] .tabbar-inner{
+    background: rgba(46,44,42,.55); border-color: rgba(255,255,255,.14);
+  }
+  :root[data-theme="dark"] .tab:not(.active){ color:#E4E4E6; } /* :not(.active) o vincerebbe
+    per specificità anche sulla voce selezionata, che deve restare bianca sul rosso */
   .tab{
-    border:none; background:transparent; color:#D8D8DA; display:flex; flex-direction:column; align-items:center;
+    border:none; background:transparent; color:#3A3A3C; display:flex; flex-direction:column; align-items:center;
     gap:3px; padding:9px 20px; border-radius: var(--r-pill); cursor:pointer; font-size:.64rem; font-weight:600;
-    text-shadow: 0 1px 3px rgba(20,14,10,.35); /* con il vetro più trasparente le voci
-      non attive passano sopra contenuti chiari: l'ombra del testo le tiene leggibili */
+    /* grigio scuro, non bianco: sta sopra il vetro chiaro. Le icone seguono da sole,
+       usano currentColor. Niente text-shadow: su fondo chiaro sporcherebbe e basta. */
   }
   .tab .ico{ display:flex; }
   .tab svg{ width:20px; height:20px; }
