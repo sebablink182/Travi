@@ -3,23 +3,17 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, minimum-scale=1, user-scalable=no, viewport-fit=cover">
-<script>
-  // Altezza reale dello schermo, misurata da JS invece che affidata a vh/dvh/%:
-  // in una PWA installata su iOS il calcolo nativo di queste unità può risultare
-  // leggermente più corto dell'area davvero visibile, lasciando una fascia vuota
-  // fissa in fondo. Misurando qui (prima che la pagina venga disegnata) e ad ogni
-  // resize/rotazione, l'altezza usata da .stage è sempre quella vera del device.
-  (function () {
-    function setAppVh() {
-      var h = (window.visualViewport && window.visualViewport.height) || window.innerHeight;
-      document.documentElement.style.setProperty("--app-vh", h + "px");
-    }
-    setAppVh();
-    window.addEventListener("resize", setAppVh);
-    window.addEventListener("orientationchange", setAppVh);
-    if (window.visualViewport) window.visualViewport.addEventListener("resize", setAppVh);
-  })();
-</script>
+<!-- TROVATA LA VERA CAUSA DELLA BANDA: qui c'era uno script che misurava
+     window.visualViewport.height / window.innerHeight e lo scriveva in --app-vh,
+     usata poi da .stage come altezza. Su questo iPhone, ora che html/body possono
+     scorrere normalmente (vedi style.css), innerHeight/visualViewport riportano
+     un valore PIÙ CORTO (894px) dello schermo vero (screen.height, 956px) — sono
+     proprio le unità "dinamiche" che iOS può restringere quando la pagina è
+     scorribile. Usare quel numero per l'altezza di .stage forzava .stage a finire
+     62px prima della fine reale dello schermo: la banda bianca in fondo, sotto la
+     pillola, non era mai la pillola né la foto. Ora .stage usa semplicemente
+     height:100% (vedi style.css), che eredita da html/body ed è risultato
+     corrispondere all'altezza vera dello schermo — niente più JS di mezzo. -->
 <title>Travi</title>
 <meta name="description" content="Il vostro compagno di viaggio per il honeymoon in Giappone">
 <link rel="manifest" href="manifest.json">

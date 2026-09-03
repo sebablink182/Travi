@@ -57,7 +57,7 @@
     font-family: var(--font-ui);
     font-size:15px;
     line-height:1.4;
-    min-height:100%;
+    height:100%;
     touch-action:pan-y;
     /* PRIMA qui c'erano overflow:hidden + position:fixed;inset:0 + overscroll-behavior:none,
        per bloccare del tutto lo scroll della pagina (solo i .scroll interni potevano scorrere).
@@ -69,7 +69,13 @@
        Ora la pagina può scorrere/rimbalzare normalmente a livello di documento come una
        pagina web qualunque — nella pratica non si vede nessuno scroll in più, perché .stage
        riempie già esattamente lo schermo, ma permette a iOS di dipingere quella striscia
-       col colore giusto invece del bianco di default. */
+       col colore giusto invece del bianco di default.
+       "height:100%" e non "min-height:100%": serve perché i figli (#app-root, .stage)
+       usano a loro volta height:100% per riempire lo schermo — una percentuale di altezza
+       funziona solo se il genitore ha un'altezza "definita", non "min-height" (che per le
+       percentuali dei figli conta come "auto"). Non toglie la scorribilità: se mai ci fosse
+       contenuto più alto di 100%, uscirebbe comunque visivamente invece di essere tagliato,
+       perché qui non c'è overflow:hidden. */
   }
   #app-root{ height:100%; /* NIENTE overflow:hidden qui: l'avevo aggiunto per "contenere" il
     link di uscita che spuntava fuori, ma bloccare lo scroll/rimbalzo su QUALSIASI contenitore
@@ -86,14 +92,17 @@
   }
 
   /* ---------- app shell ---------- */
-  /* Altezza presa da --app-vh, misurata in JS con window.innerHeight/visualViewport
-     (vedi lo script in <head>) invece che da vh/dvh/percentuali: in una PWA
-     installata su iOS quei calcoli nativi possono risultare più corti dell'area
-     davvero visibile, lasciando una fascia vuota fissa in fondo, su ogni pagina —
-     non era la pillola né il padding dello scroll. 100% resta come fallback per il
-     brevissimo istante prima che lo script giri (o se JS è disabilitato). */
+  /* TROVATA LA VERA CAUSA DELLA BANDA (vedi anche la nota in index.html): qui c'era
+     height:var(--app-vh,100%), con --app-vh misurato in JS da window.innerHeight /
+     window.visualViewport.height. Su questo iPhone, con html/body ora scorribili,
+     quei due valori riportano 894px mentre lo schermo vero (screen.height) è 956px:
+     usarli per l'altezza di .stage tagliava letteralmente 62px in fondo allo
+     schermo, sotto la pillola — la banda bianca che tornava sempre, qualunque cosa
+     si cambiasse su .hero o sulla pillola stessa, perché la causa non era mai lì.
+     100% (percentuale semplice, niente JS) eredita da html/body/#app-root — tutti
+     height:100% ora — e su questo device corrisponde davvero allo schermo intero. */
   .stage{
-    height: var(--app-vh, 100%);
+    height: 100%;
     display:flex;
     justify-content:center;
     background: var(--bg-2);
