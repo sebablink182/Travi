@@ -71,7 +71,11 @@
        riempie già esattamente lo schermo, ma permette a iOS di dipingere quella striscia
        col colore giusto invece del bianco di default. */
   }
-  #app-root{ height:100%; }
+  #app-root{ height:100%; overflow:hidden; /* il body ora può scorrere/rimbalzare (vedi sopra),
+    ma tutto il contenuto vero dell'app deve restare dentro esattamente lo schermo: questo
+    taglio va messo un livello più dentro (qui), non più su html/body, altrimenti si torna
+    al problema della striscia bianca. Gli overlay (.sheet, .backdrop, .toast) sono comunque
+    position:fixed quindi non ne risentono. */ }
   h1,h2,h3,.display{ font-family: var(--font-display); font-weight:560; letter-spacing:-.01em; text-wrap:balance; }
   button{ font-family:inherit; }
   .num{ font-variant-numeric: tabular-nums; }
