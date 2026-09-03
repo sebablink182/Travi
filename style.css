@@ -118,9 +118,9 @@
     overflow-y:auto;
     flex:1;
     min-height:0;
-    padding-bottom: calc(var(--sp-5) + env(safe-area-inset-bottom)); /* solo un piccolo margine di
-      respiro: il contenuto deve poter scorrere fin sotto la pillola "glass" (che è semi-trasparente
-      apposta) invece di fermarsi prima lasciando una fascia bianca vuota */
+    padding-bottom: var(--sp-4); /* la pillola ora è "in linea" nel layout (non più flottante sopra
+      il contenuto — vedi .tabbar), quindi lo scroll finisce semplicemente sopra di lei: basta un
+      margine di respiro normale, non deve più passarci sotto */
     -webkit-overflow-scrolling:touch;
     overscroll-behavior-y:contain; /* il rimbalzo elastico resta (sta bene), ma non "sfonda" nella pagina sotto */
     scrollbar-width:none; /* Firefox: nessuna barra di scroll visibile */
@@ -368,33 +368,29 @@
   .linkbtn svg{ width:13px; height:13px; }
 
   /* ---------- tab bar ---------- */
-  /* La pillola è position:absolute dentro .shell, che ha overflow:hidden — su
-     iOS Safari (WKWebView) un elemento assoluto con backdrop-filter dentro un
-     antenato overflow:hidden a volte non ottiene mai un proprio layer
-     compositato: resta lì nel DOM (misurabile), ma non viene proprio disegnato
-     a schermo finché qualcosa non forza un repaint (es. uno scroll), il che
-     spiega perché sparisse in modo incoerente — non un problema di spazio o
-     colore, ma di rendering mai attivato. transform+will-change forzano la
-     promozione a layer GPU fin dal primo frame, in modo stabile. */
+  /* Prima era position:absolute, "flottante" sopra il contenuto, ancorata al
+     fondo con env(safe-area-inset-bottom). Il confronto con un'altra app
+     (senza nessun elemento fisso/assoluto vicino al fondo, e senza questo
+     problema) suggerisce che sia proprio questa combinazione — elemento
+     assoluto ancorato alla safe-area, dentro una PWA standalone — a far
+     comparire su iOS un residuo dell'interfaccia di sistema vicino
+     all'home indicator (la "banda" che sembrava la barra di Safari).
+     Ora la pillola non è più flottante: è un elemento normale del layout,
+     in coda dentro .shell (che è flex-direction:column), quindi riceve
+     semplicemente il suo spazio in fondo come qualunque altro blocco —
+     niente position:absolute, niente ancoraggio diretto alla safe-area. */
   .tabbar{
-    position:absolute; left:0; right:0; bottom: calc(18px + env(safe-area-inset-bottom)); z-index:20;
+    flex:none;
     display:flex; justify-content:center;
-    pointer-events:none;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    will-change: transform;
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
   }
   .tabbar-inner{
-    pointer-events:auto;
     display:flex; gap:2px;
     background: rgba(30,30,32,.22);
     backdrop-filter: blur(38px) saturate(220%);
     -webkit-backdrop-filter: blur(38px) saturate(220%);
     border: 1px solid rgba(255,255,255,.22);
     border-radius: var(--r-pill); padding:6px;
-    transform: translateZ(0);
-    -webkit-transform: translateZ(0);
-    will-change: transform;
   }
   :root[data-theme="dark"] .tabbar-inner{ background: rgba(10,9,7,.26); }
   .tab{
@@ -505,3 +501,22 @@
   .login-note{ text-align:center; font-size:.7rem; color:var(--text-muted); margin-top:16px; line-height:1.4; }
   [hidden]{ display:none !important; }
   .signout-link{ display:block; text-align:center; font-size:.75rem; color:var(--text-muted); margin:6px 0 90px; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+
+  /* =====================================================================
+     TEST TEMPORANEO — sfondo verde fosforescente per stanare la banda
+     bianca in fondo. Se qualcosa che il nostro CSS controlla causa la
+     banda, ora si vedrebbe verde come tutto il resto; se resta bianca
+     nonostante questo, vuol dire che non è affatto una nostra superficie
+     (sfondo, card, contenitore) ma qualcosa che il nostro codice non
+     dipinge — quindi fuori dalla pagina. DA RIMUOVERE non appena trovata
+     la causa: non è pensato per restare nell'app.
+     ===================================================================== */
+  :root{
+    --bg: #39FF14;
+    --bg-2: #39FF14;
+    --surface: #2EE60D;
+    --surface-2: #25CC00;
+  }
+  html, body, .stage, .shell, .view, .scroll{
+    background: #39FF14 !important;
+  }
