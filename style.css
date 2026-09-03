@@ -46,15 +46,10 @@
   html,body{margin:0; padding:0;}
   html{
     height:100%;
-    overflow:hidden;
     touch-action:pan-y; /* niente pinch-zoom / doppio-tap-zoom in giro per l'app */
-    overscroll-behavior:none;
     background: var(--bg); /* fondamentale in una PWA iOS standalone: senza questo
       l'elemento html è trasparente/bianco di default, e la WKWebView di iOS
-      dipinge il proprio sfondo (bianco) sotto/oltre il body — è esattamente
-      la striscia bianca fissa in fondo che tagliava le card, su ogni pagina,
-      indipendente da vh/dvh, padding o cache: non era un problema di altezza
-      calcolata ma di colore di sfondo mai impostato su html. */
+      dipinge il proprio sfondo (bianco) sotto/oltre il body. */
   }
   body{
     background: var(--bg);
@@ -62,13 +57,19 @@
     font-family: var(--font-ui);
     font-size:15px;
     line-height:1.4;
-    height:100%;
-    overflow:hidden; /* la pagina in sé non scrolla mai: solo i contenitori .scroll interni */
-    overscroll-behavior:none; /* niente "pull-to-refresh" e niente rimbalzo della pagina */
+    min-height:100%;
     touch-action:pan-y;
-    position:fixed;
-    inset:0;
-    width:100%;
+    /* PRIMA qui c'erano overflow:hidden + position:fixed;inset:0 + overscroll-behavior:none,
+       per bloccare del tutto lo scroll della pagina (solo i .scroll interni potevano scorrere).
+       Bloccando anche il "rimbalzo" nativo della pagina a livello di documento, però, iOS
+       sembra non dipingere mai correttamente lo sfondo di html nella striscia riservata
+       all'home indicator in fondo allo schermo — resta sul bianco di default della WKWebView,
+       indipendentemente da qualunque colore impostato via CSS: è la banda bianca fissa che
+       vediamo da giorni. L'app di riferimento (senza questo blocco) non ha questo problema.
+       Ora la pagina può scorrere/rimbalzare normalmente a livello di documento come una
+       pagina web qualunque — nella pratica non si vede nessuno scroll in più, perché .stage
+       riempie già esattamente lo schermo, ma permette a iOS di dipingere quella striscia
+       col colore giusto invece del bianco di default. */
   }
   #app-root{ height:100%; }
   h1,h2,h3,.display{ font-family: var(--font-display); font-weight:560; letter-spacing:-.01em; text-wrap:balance; }
