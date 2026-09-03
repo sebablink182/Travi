@@ -156,9 +156,7 @@
      resta incollata in cima, mostrando sempre un pezzetto di foto (--hero-sliver)
      sotto la status bar, qualunque sia la posizione dello scroll. */
   .hero{
-    position:static; /* rimesso static: quando l'avevo riportato a "sticky" la banda in fondo
-      è tornata — torniamo alla configurazione confermata pulita per essere sicuri, prima di
-      ridare alla foto l'effetto "incollata in alto" in un passaggio separato e isolato. */
+    position:sticky; top: calc(var(--hero-sliver) - var(--hero-h));
     z-index:2;
     margin:0; border-radius: 0 0 var(--r-xl) var(--r-xl);
     height: var(--hero-h);
