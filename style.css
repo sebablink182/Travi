@@ -71,11 +71,12 @@
        riempie già esattamente lo schermo, ma permette a iOS di dipingere quella striscia
        col colore giusto invece del bianco di default. */
   }
-  #app-root{ height:100%; overflow:hidden; /* il body ora può scorrere/rimbalzare (vedi sopra),
-    ma tutto il contenuto vero dell'app deve restare dentro esattamente lo schermo: questo
-    taglio va messo un livello più dentro (qui), non più su html/body, altrimenti si torna
-    al problema della striscia bianca. Gli overlay (.sheet, .backdrop, .toast) sono comunque
-    position:fixed quindi non ne risentono. */ }
+  #app-root{ height:100%; /* NIENTE overflow:hidden qui: l'avevo aggiunto per "contenere" il
+    link di uscita che spuntava fuori, ma bloccare lo scroll/rimbalzo su QUALSIASI contenitore
+    tra html e lo schermo — anche un livello sotto al body — fa tornare la striscia bianca in
+    fondo. Il link di uscita ora sta dentro .scroll della Home (vedi index.html), quindi qui
+    non serve più nessun taglio: .stage/.shell restano già esattamente alti quanto lo schermo
+    da soli, senza bisogno di essere "tagliati" da un contenitore intorno. */ }
   h1,h2,h3,.display{ font-family: var(--font-display); font-weight:560; letter-spacing:-.01em; text-wrap:balance; }
   button{ font-family:inherit; }
   .num{ font-variant-numeric: tabular-nums; }
