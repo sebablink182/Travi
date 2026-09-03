@@ -20,7 +20,7 @@
   html{ height:100%; background:#E00000; }              /* ROSSO  */
   body{ height:100%; background:#0044DD;                /* BLU    */
         font-family:-apple-system, BlinkMacSystemFont, sans-serif; }
-  .box{ height:100%; background:#00A040;                /* VERDE  */
+  .box{ height:100vh; background:#00A040;               /* VERDE  */
         display:flex; flex-direction:column; }
   .bar{ margin-top:auto; background:#FF8800;            /* ARANCIO */
         height:74px; display:flex; align-items:center; justify-content:center;
@@ -53,7 +53,7 @@
 <div class="probe" id="p-sab"  style="height:env(safe-area-inset-bottom)"></div>
 
 <script>
-  var BUILD = "TEST-1";
+  var BUILD = "TEST-2 (box = 100vh)";
   function h(id){
     var el = document.getElementById(id);
     return el ? Math.round(el.getBoundingClientRect().height) : "?";
@@ -77,7 +77,9 @@
       "\n--- safe area ---" +
       "\nsopra: " + h("p-sat") + "   sotto: " + h("p-sab") +
       "\n--- barra arancione ---" +
-      "\nfondo barra a: " + Math.round(bar.bottom);
+      "\nfondo barra a: " + Math.round(bar.bottom) +
+      "\n(deve diventare 956)" +
+      "\nscroll pagina: " + (document.documentElement.scrollHeight - document.documentElement.clientHeight) + "px";
   }
   render();
   window.addEventListener("resize", render);
