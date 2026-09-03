@@ -263,29 +263,54 @@
   // la versione vecchia, il sito non si è ripubblicato/ricaricato per davvero
   // e i numeri sotto non vogliono dire niente. Si toglie tutto appena chiarito.
   (function () {
-    var BUILD = "BUILD 2026-09-03-b";
+    var BUILD = "BUILD 2026-09-03-c";
     function mount() {
       var hud = document.createElement("pre");
       hud.id = "debug-hud";
       hud.style.cssText =
-        "position:fixed; left:4px; top:4px; z-index:99999; margin:0; padding:6px 8px;" +
+        "position:fixed; left:4px; top:calc(env(safe-area-inset-top) + 4px); z-index:99999; margin:0; padding:6px 8px;" +
         "background:rgba(0,0,0,.85); color:#7CFC9A; font:10px/1.5 'SF Mono', Menlo, monospace;" +
         "border-radius:8px; max-width:96vw; white-space:pre-wrap; pointer-events:none;";
       document.body.appendChild(hud);
+      // Censimento della fascia bassa dello schermo: per ogni elemento che
+      // DIPINGE qualcosa (sfondo non trasparente, o un bordo) e che finisce
+      // nell'ultima fetta di schermo, stampa nome, dove inizia/finisce e con
+      // che colore. La barra misteriosa sotto la pillola sara' una di queste
+      // righe: si legge il colore, si legge chi e', e si sa cosa togliere.
+      function name(el) {
+        var n = el.tagName.toLowerCase();
+        if (el.id) n += "#" + el.id;
+        if (el.className && typeof el.className === "string") {
+          n += "." + el.className.trim().split(/\s+/).join(".");
+        }
+        return n.length > 30 ? n.slice(0, 30) : n;
+      }
       function render() {
-        var tb = document.querySelector(".tabbar");
-        var stage = document.querySelector(".stage");
-        var tr = tb ? tb.getBoundingClientRect() : null;
-        var sr = stage ? stage.getBoundingClientRect() : null;
+        var H = window.screen.height;
+        var ZONA = H - 130; // guardiamo solo gli ultimi 130px di schermo
+        var righe = [];
+        var all = document.querySelectorAll("body *");
+        for (var i = 0; i < all.length; i++) {
+          var el = all[i];
+          if (el.id === "debug-hud") continue;
+          var r = el.getBoundingClientRect();
+          if (r.height === 0 || r.bottom < ZONA) continue;
+          var cs = getComputedStyle(el);
+          if (cs.visibility === "hidden" || cs.display === "none") continue;
+          var bg = cs.backgroundColor;
+          var trasparente = (bg === "rgba(0, 0, 0, 0)" || bg === "transparent");
+          var bordo = (cs.borderTopWidth !== "0px" || cs.borderBottomWidth !== "0px");
+          if (trasparente && !bordo) continue;
+          righe.push(
+            name(el) + "\n   " + Math.round(r.top) + "->" + Math.round(r.bottom) +
+            "  " + bg.replace(/\s/g, "")
+          );
+        }
         hud.textContent =
           BUILD +
-          "\ninnerHeight: " + window.innerHeight + "   screen.height: " + window.screen.height +
-          "\ndifferenza: " + (window.screen.height - window.innerHeight) + "px" +
-          "\ndocEl.clientHeight: " + document.documentElement.clientHeight +
-          "\ndocEl.scrollHeight: " + document.documentElement.scrollHeight +
-          "\nbody.scrollHeight: " + document.body.scrollHeight +
-          "\n.stage rect.height: " + (sr ? Math.round(sr.height) : "n/a") +
-          "\n.tabbar bottom: " + (tr ? Math.round(tr.bottom) : "n/a") + "px";
+          "\nschermo: " + H + "   area: " + window.innerHeight +
+          "\n--- chi dipinge sotto " + ZONA + "px ---\n" +
+          (righe.length ? righe.join("\n") : "nessuno");
       }
       render();
       window.addEventListener("resize", render);
