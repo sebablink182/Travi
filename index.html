@@ -290,6 +290,8 @@
         "docEl.clientHeight: " + document.documentElement.clientHeight,
         "SCREEN.height: " + window.screen.height + "  SCREEN.availHeight: " + window.screen.availHeight,
         "devicePixelRatio: " + window.devicePixelRatio,
+        "display-mode standalone: " + (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches),
+        "navigator.standalone: " + (typeof window.navigator.standalone === "undefined" ? "n/a" : window.navigator.standalone),
         "safe-area-bottom: " + safeAreaBottom(),
         bgOf("html"),
         bgOf("body"),
