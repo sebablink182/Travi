@@ -121,7 +121,6 @@
     padding-bottom: var(--sp-4); /* la pillola ora è "in linea" nel layout (non più flottante sopra
       il contenuto — vedi .tabbar), quindi lo scroll finisce semplicemente sopra di lei: basta un
       margine di respiro normale, non deve più passarci sotto */
-    -webkit-overflow-scrolling:touch;
     overscroll-behavior-y:contain; /* il rimbalzo elastico resta (sta bene), ma non "sfonda" nella pagina sotto */
     scrollbar-width:none; /* Firefox: nessuna barra di scroll visibile */
   }
