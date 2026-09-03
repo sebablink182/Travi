@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="TEST">
+<title>TEST</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+
+  /* Ogni livello ha un COLORE DIVERSO. Se in fondo allo schermo resta una
+     striscia, il suo colore dice da solo di chi è la colpa:
+       ROSSO   -> html arriva in fondo, ma body no
+       BLU     -> body arriva in fondo, ma il contenitore verde no
+       VERDE   -> il contenitore arriva in fondo, è solo la barra a stare corta
+       BIANCO  -> non ci arriva NESSUN nostro colore: è spazio che iOS tiene
+                  per sé, fuori dalla pagina, e nessun CSS potrà mai riempirlo */
+  html{ height:100%; background:#E00000; }              /* ROSSO  */
+  body{ height:100%; background:#0044DD;                /* BLU    */
+        font-family:-apple-system, BlinkMacSystemFont, sans-serif; }
+  .box{ height:100%; background:#00A040;                /* VERDE  */
+        display:flex; flex-direction:column; }
+  .bar{ margin-top:auto; background:#FF8800;            /* ARANCIO */
+        height:74px; display:flex; align-items:center; justify-content:center;
+        text-align:center; font-size:12px; font-weight:700; color:#241300;
+        padding:0 12px; }
+
+  #out{ margin: calc(env(safe-area-inset-top) + 10px) 8px 0;
+        background:rgba(0,0,0,.88); color:#7CFC9A;
+        font:11px/1.5 'SF Mono', Menlo, monospace;
+        padding:8px 10px; border-radius:8px; white-space:pre-wrap; }
+
+  /* sonde invisibili: servono solo a misurare quanto vale davvero ogni unità */
+  .probe{ position:absolute; left:-9999px; top:0; width:1px; }
+</style>
+</head>
+<body>
+
+<div class="box">
+  <pre id="out">misuro…</pre>
+  <div class="bar">BARRA ARANCIONE — sotto di me non deve esserci nessuna striscia</div>
+</div>
+
+<div class="probe" id="p-pct"  style="height:100%"></div>
+<div class="probe" id="p-vh"   style="height:100vh"></div>
+<div class="probe" id="p-dvh"  style="height:100dvh"></div>
+<div class="probe" id="p-svh"  style="height:100svh"></div>
+<div class="probe" id="p-lvh"  style="height:100lvh"></div>
+<div class="probe" id="p-fill" style="height:-webkit-fill-available"></div>
+<div class="probe" id="p-sat"  style="height:env(safe-area-inset-top)"></div>
+<div class="probe" id="p-sab"  style="height:env(safe-area-inset-bottom)"></div>
+
+<script>
+  var BUILD = "TEST-1";
+  function h(id){
+    var el = document.getElementById(id);
+    return el ? Math.round(el.getBoundingClientRect().height) : "?";
+  }
+  function render(){
+    var bar = document.querySelector(".bar").getBoundingClientRect();
+    document.getElementById("out").textContent =
+      BUILD +
+      "\nscreen.height:     " + window.screen.height +
+      "\nscreen.availHeight:" + window.screen.availHeight +
+      "\ninnerHeight:       " + window.innerHeight +
+      "\nvisualViewport:    " + (window.visualViewport ? Math.round(window.visualViewport.height) : "n/d") +
+      "\ndocEl.clientHeight:" + document.documentElement.clientHeight +
+      "\n--- quanto vale ogni unita' ---" +
+      "\n100%:   " + h("p-pct") +
+      "\n100vh:  " + h("p-vh") +
+      "\n100dvh: " + h("p-dvh") +
+      "\n100svh: " + h("p-svh") +
+      "\n100lvh: " + h("p-lvh") +
+      "\nfill-available: " + h("p-fill") +
+      "\n--- safe area ---" +
+      "\nsopra: " + h("p-sat") + "   sotto: " + h("p-sab") +
+      "\n--- barra arancione ---" +
+      "\nfondo barra a: " + Math.round(bar.bottom);
+  }
+  render();
+  window.addEventListener("resize", render);
+  window.addEventListener("orientationchange", render);
+  if (window.visualViewport) window.visualViewport.addEventListener("resize", render);
+  setInterval(render, 1000);
+</script>
+
+</body>
+</html>
