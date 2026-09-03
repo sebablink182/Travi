@@ -395,10 +395,9 @@
      semplicemente il suo spazio in fondo come qualunque altro blocco —
      niente position:absolute, niente ancoraggio diretto alla safe-area. */
   .tabbar{
-    display:none; /* TEST: nascosta del tutto su richiesta, per vedere se la banda
-      in fondo dipende da lei (es. dalla sfocatura backdrop-filter) invece che
-      dalla foto sticky. Va rimessa "flex:none; display:flex; justify-content:center;
-      padding: 10px 0 calc(10px + env(safe-area-inset-bottom));" appena finito il test. */
+    flex:none;
+    display:flex; justify-content:center;
+    padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
   }
   .tabbar-inner{
     display:flex; gap:2px;

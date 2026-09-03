@@ -261,5 +261,33 @@
     onScroll();
   })();
 </script>
+<script>
+  // Pannello numeri TEMPORANEO, di nuovo — ci serve un dato certo invece di
+  // continuare a indovinare dagli screenshot. Si toglie appena chiarito.
+  (function () {
+    function mount() {
+      var hud = document.createElement("pre");
+      hud.id = "debug-hud";
+      hud.style.cssText =
+        "position:fixed; left:4px; top:4px; z-index:99999; margin:0; padding:6px 8px;" +
+        "background:rgba(0,0,0,.85); color:#7CFC9A; font:10px/1.5 'SF Mono', Menlo, monospace;" +
+        "border-radius:8px; max-width:96vw; white-space:pre-wrap; pointer-events:none;";
+      document.body.appendChild(hud);
+      function render() {
+        var tb = document.querySelector(".tabbar");
+        var r = tb ? tb.getBoundingClientRect() : null;
+        hud.textContent =
+          "innerHeight: " + window.innerHeight + "   SCREEN.height: " + window.screen.height +
+          "\ndifferenza: " + (window.screen.height - window.innerHeight) + "px" +
+          "\n.tabbar bottom: " + (r ? Math.round(r.bottom) : "n/a") + "px";
+      }
+      render();
+      window.addEventListener("resize", render);
+      setInterval(render, 1000);
+    }
+    document.addEventListener("DOMContentLoaded", mount);
+    window.addEventListener("load", mount);
+  })();
+</script>
 </body>
 </html>
