@@ -142,9 +142,10 @@
     overflow-y:auto;
     flex:1;
     min-height:0;
-    padding-bottom: var(--sp-4); /* la pillola ora è "in linea" nel layout (non più flottante sopra
-      il contenuto — vedi .tabbar), quindi lo scroll finisce semplicemente sopra di lei: basta un
-      margine di respiro normale, non deve più passarci sotto */
+    padding-bottom: calc(88px + env(safe-area-inset-bottom) + var(--sp-4)); /* la pillola galleggia
+      sopra il contenuto, quindi lo scroll le passa sotto: serve questo spazio in coda perché
+      l'ultimo blocco possa arrivare sopra la pillola invece di restarci nascosto dietro.
+      88px = altezza della pillola (68) + i suoi 10+10 di padding; vedi .tabbar */
     overscroll-behavior-y:contain; /* il rimbalzo elastico resta (sta bene), ma non "sfonda" nella pagina sotto */
     scrollbar-width:none; /* Firefox: nessuna barra di scroll visibile */
   }
@@ -402,22 +403,25 @@
 
   /* ---------- tab bar ---------- */
   /* Prima era position:absolute, "flottante" sopra il contenuto, ancorata al
-     fondo con env(safe-area-inset-bottom). Il confronto con un'altra app
-     (senza nessun elemento fisso/assoluto vicino al fondo, e senza questo
-     problema) suggerisce che sia proprio questa combinazione — elemento
-     assoluto ancorato alla safe-area, dentro una PWA standalone — a far
-     comparire su iOS un residuo dell'interfaccia di sistema vicino
-     all'home indicator (la "banda" che sembrava la barra di Safari).
-     Ora la pillola non è più flottante: è un elemento normale del layout,
-     in coda dentro .shell (che è flex-direction:column), quindi riceve
-     semplicemente il suo spazio in fondo come qualunque altro blocco —
-     niente position:absolute, niente ancoraggio diretto alla safe-area. */
+     fondo con env(safe-area-inset-bottom).
+     NOTA (03/09): per un giorno ho sospettato che fosse questa combinazione
+     — elemento assoluto ancorato alla safe-area in una PWA standalone — a
+     causare la banda bianca in fondo, e avevo tolto il galleggiamento
+     mettendo la pillola "in fila" nel layout. Era sbagliato: la banda era
+     causata dall'altezza in percentuale (vedi la nota su .stage, 100% = 894
+     invece di 956), e la pillola non c'entrava nulla. In compenso quella
+     modifica ne aveva creata un'altra, di banda: la pillola in fila si
+     portava dietro 122px di sfondo pieno con un taglio netto dove finiva il
+     contenuto. Quindi la pillola è tornata a galleggiare, come disegnata —
+     serve anche perché il suo backdrop-filter possa sfocare qualcosa. */
   .tabbar{
-    flex:none;
+    position:absolute; left:0; right:0; bottom:0; z-index:30;
     display:flex; justify-content:center;
     padding: 10px 0 calc(10px + env(safe-area-inset-bottom));
+    pointer-events:none; /* i tocchi passano al contenuto sotto; solo la pillola li prende */
   }
   .tabbar-inner{
+    pointer-events:auto;
     display:flex; gap:2px;
     background: rgba(30,30,32,.22);
     backdrop-filter: blur(38px) saturate(220%);
