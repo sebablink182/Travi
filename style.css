@@ -161,7 +161,12 @@
      invece con un piccolo script (vedi index.html, in fondo) che sposta la foto via
      transform mentre si scorre: niente position:sticky, niente banda. */
   .hero{
-    position:static;
+    position:relative; /* NON static: la foto (.hero-photo) e gli altri elementi dentro sono
+      position:absolute e devono ancorarsi ai bordi di QUESTO box (424px). Con "static" non
+      contano come "genitore di riferimento", quindi finivano per ancorarsi al box grande
+      quanto tutto lo schermo (.shell) invece che alla foto — la foto si spostava fuori
+      vista e si vedeva il colore di riserva pesca al posto suo. "relative" risolve senza
+      riportare "sticky" (che è la causa della banda). */
     z-index:2;
     margin:0; border-radius: 0 0 var(--r-xl) var(--r-xl);
     height: var(--hero-h);
