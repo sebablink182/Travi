@@ -1,0 +1,145 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Posizione dei 5 hotel</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:400 15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;background:#FAFAF9;color:#1C1C1E}
+  header{padding:calc(env(safe-area-inset-top) + 12px) 14px 10px;background:#fff;border-bottom:1px solid #EAEAE8}
+  h1{font-size:17px;font-weight:600}
+  p.sub{font-size:13px;color:#8E8E93;margin-top:3px}
+  .tabs{display:flex;gap:6px;padding:10px 14px;background:#fff;overflow-x:auto;border-bottom:1px solid #EAEAE8}
+  .tabs button{flex:none;padding:8px 12px;border:1px solid #EAEAE8;background:#fff;border-radius:99px;
+               font:600 12px inherit;font-family:inherit;color:#1C1C1E;white-space:nowrap}
+  .tabs button.on{background:#F5503C;border-color:#F5503C;color:#fff}
+  .tabs button.done{border-color:#4CAF6C;color:#2E7D4F}
+  .tabs button.on.done{background:#4CAF6C;border-color:#4CAF6C;color:#fff}
+  .cerca{display:flex;gap:8px;padding:12px 14px;background:#fff;border-bottom:1px solid #EAEAE8}
+  .cerca input{flex:1;min-width:0;padding:11px 12px;border:1px solid #EAEAE8;border-radius:12px;
+               font:15px inherit;font-family:inherit;background:#FAFAF9}
+  .cerca button{flex:none;padding:11px 16px;border:none;border-radius:12px;background:#1C1C1E;color:#fff;
+                font:600 14px inherit;font-family:inherit}
+  #map{height:46vh;width:100%}
+  .hint{padding:9px 14px;font-size:12px;color:#8E8E93;background:#F7F5F2;border-bottom:1px solid #EAEAE8}
+  .cand{padding:0 0 6px}
+  .cand div{padding:11px 14px;border-bottom:1px solid #F2F2F1;font-size:13px}
+  .cand div b{display:block;font-size:14px;font-weight:600;margin-bottom:1px}
+  .ora{padding:12px 14px;font:12px/1.6 'SF Mono',Menlo,monospace;color:#8E8E93;background:#fff;
+       border-top:1px solid #EAEAE8}
+  .azioni{padding:14px}
+  .azioni button{width:100%;padding:14px;border:none;border-radius:14px;background:#F5503C;color:#fff;
+                 font:600 15px inherit;font-family:inherit}
+  textarea{width:100%;height:120px;margin-top:10px;padding:10px;border:1px solid #EAEAE8;border-radius:12px;
+           font:11px/1.5 'SF Mono',Menlo,monospace;background:#fff}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Posizione dei 5 hotel</h1>
+  <p class="sub">OpenStreetMap non li ha censiti. Due modi: cerca l'indirizzo della prenotazione,
+     oppure tocca direttamente il punto giusto sulla mappa.</p>
+</header>
+
+<div class="tabs" id="tabs"></div>
+
+<div class="cerca">
+  <input id="q" placeholder="indirizzo o nome…">
+  <button id="vai">cerca</button>
+</div>
+
+<div class="hint" id="hint">Tocca la mappa per spostare il pin dove serve.</div>
+<div id="map"></div>
+<div class="cand" id="cand"></div>
+<div class="ora" id="ora">—</div>
+
+<div class="azioni">
+  <button id="copia">Copia il risultato per Claude</button>
+  <textarea id="out" readonly></textarea>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+var H = [{"id": "s504", "day": "d5", "time": "16:30", "title": "Check-in Aura Tachibana", "q": "Aura Tachibana, Hakone", "lat": 35.2337, "lon": 139.1042, "src": "fb"}, {"id": "s605", "day": "d6", "time": "18:30", "title": "Check-in Holiday Inn ANA Kanazawa Sky", "q": "Holiday Inn ANA Kanazawa Sky", "lat": 36.5688, "lon": 136.656, "src": "fb"}, {"id": "s704", "day": "d7", "time": "16:30", "title": "Check-in Oriental Hotel Kyoto Rokujo", "q": "Oriental Hotel Kyoto Rokujo", "lat": 34.9885, "lon": 135.762, "src": "fb"}, {"id": "s1104", "day": "d11", "time": "17:00", "title": "Check-in ryokan Iwaso", "q": "Iwaso Ryokan, Miyajima", "lat": 34.2937, "lon": 132.3193, "src": "fb"}, {"id": "s1302", "day": "d13", "time": "14:00", "title": "Check-in Moxy Osaka Honmachi by Marriott", "q": "Moxy Osaka Honmachi by Marriott", "lat": 34.682, "lon": 135.501, "src": "fb"}];
+var sel = 0;
+
+var map = L.map('map').setView([H[0].lat, H[0].lon], 16);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png',
+  {attribution:'&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19}).addTo(map);
+var marker = L.marker([H[0].lat, H[0].lon], {draggable:true}).addTo(map);
+
+marker.on('dragend', function(){ var p = marker.getLatLng(); poni(p.lat, p.lng); });
+map.on('click', function(e){ poni(e.latlng.lat, e.latlng.lng); });
+
+function poni(lat, lon){
+  H[sel].lat = +lat.toFixed(6); H[sel].lon = +lon.toFixed(6); H[sel].src = 'mano';
+  marker.setLatLng([lat, lon]); aggiorna();
+}
+
+function tabs(){
+  var c = document.getElementById('tabs'); c.innerHTML = '';
+  H.forEach(function(h, i){
+    var b = document.createElement('button');
+    b.textContent = h.title.replace('Check-in ','');
+    if (i === sel) b.className = 'on';
+    if (h.src === 'mano') b.className += ' done';
+    b.onclick = function(){ sel = i; apri(); };
+    c.appendChild(b);
+  });
+}
+
+function apri(){
+  var h = H[sel];
+  document.getElementById('q').value = h.q;
+  document.getElementById('cand').innerHTML = '';
+  marker.setLatLng([h.lat, h.lon]);
+  map.setView([h.lat, h.lon], 16);
+  aggiorna();
+}
+
+function aggiorna(){
+  var h = H[sel];
+  document.getElementById('ora').textContent =
+    h.title.replace('Check-in ','') + '\n' + h.lat + ', ' + h.lon +
+    (h.src === 'mano' ? '   ✓ sistemata' : '   (ancora approssimata)');
+  document.getElementById('out').value = JSON.stringify(
+    H.map(function(x){ return {id:x.id, lat:x.lat, lon:x.lon, src:x.src}; }));
+  tabs();
+}
+
+document.getElementById('vai').onclick = function(){
+  var testo = document.getElementById('q').value.trim();
+  if (!testo) return;
+  var c = document.getElementById('cand');
+  c.innerHTML = '<div>cerco…</div>';
+  fetch('https://nominatim.openstreetmap.org/search?format=json&limit=6&q=' + encodeURIComponent(testo))
+    .then(function(r){ return r.json(); })
+    .then(function(j){
+      c.innerHTML = '';
+      if (!j || !j.length){ c.innerHTML = '<div>Nessun risultato. Prova con la via, o tocca la mappa.</div>'; return; }
+      j.forEach(function(r){
+        var d = document.createElement('div');
+        d.innerHTML = '<b>' + (r.name || r.display_name.split(',')[0]) + '</b>' + r.display_name;
+        d.onclick = function(){
+          poni(parseFloat(r.lat), parseFloat(r.lon));
+          map.setView([r.lat, r.lon], 17);
+          c.innerHTML = '';
+        };
+        c.appendChild(d);
+      });
+    })
+    .catch(function(){ c.innerHTML = '<div>Ricerca non riuscita. Tocca la mappa per posizionarlo.</div>'; });
+};
+
+document.getElementById('copia').onclick = function(){
+  var t = document.getElementById('out'); t.select();
+  try { document.execCommand('copy'); this.textContent = 'copiato'; } catch(e){}
+};
+
+apri();
+</script>
+</body>
+</html>
