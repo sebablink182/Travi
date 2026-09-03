@@ -150,7 +150,11 @@
      resta incollata in cima, mostrando sempre un pezzetto di foto (--hero-sliver)
      sotto la status bar, qualunque sia la posizione dello scroll. */
   .hero{
-    position:sticky; top: calc(var(--hero-sliver) - var(--hero-h));
+    position:static; /* TEST: era "sticky" con top negativo — dentro un'area che scorre,
+      annidata in due contenitori con overflow:hidden (.shell e .stage), è un pattern
+      con bug noti su WebKit che possono alterare il calcolo dell'altezza scrollabile.
+      Qui la foto perde temporaneamente l'effetto "resta incollata in alto durante lo
+      scroll" — se il problema sparisce, sappiamo che la causa è questa. */
     z-index:2;
     margin:0; border-radius: 0 0 var(--r-xl) var(--r-xl);
     height: var(--hero-h);
