@@ -18,6 +18,41 @@
     --good:#4CAF6C;
     --glass:rgba(255,255,255,.65);
     --glass-strong:rgba(255,255,255,.88);
+
+    /* ========================================================================
+       VETRO — LO STANDARD DELL'APP ("glass stile Apple")
+       ========================================================================
+       Calibrato sul telefono vero il 03/09/2026 con pillola.html, muovendo i
+       cursori sopra contenuti chiari, scuri e colorati. Codice scelto:
+
+           SB-22-5-170-25-30
+           velo scuro 22% · sfocatura 5px · colore 170%
+           ombra 25% · bordo 30% · testo bianco
+
+       QUESTA È LA REGOLA, non un valore di comodo: ogni elemento di vetro
+       dell'app usa queste variabili e nessuno reintroduce numeri propri.
+       Se un giorno il vetro va rivisto, si riapre pillola.html, si ricalibra
+       guardando, e si cambiano SOLTANTO le righe qui sotto: tutto il resto
+       dell'app si adegua da solo.
+
+       Perché funziona, per non rifare l'errore: la sfocatura è BASSA (5px).
+       Sfocare molto (20-40px) sembra più "vetro" ma riduce ciò che sta sotto
+       a una macchia di colore uniforme, e il vetro diventa una superficie
+       piatta e opaca. Sfocando poco si riconoscono le forme che scorrono
+       sotto: è quello che rende l'effetto vivo invece che finto.
+       ------------------------------------------------------------------ */
+    --vetro-bg: rgba(30,30,32,.22);
+    --vetro-filtro: blur(5px) saturate(170%);
+    --vetro-bordo: 1px solid rgba(255,255,255,.30);
+    --vetro-ombra: 0 12px 32px -8px rgba(20,14,10,.25),
+                   0 3px 8px -2px rgba(20,14,10,.10);
+    --vetro-testo: #FFFFFF;
+    /* Variante chiara: stessa fisica (sfocatura, bordo, ombra), velo chiaro e
+       testo scuro. Da usare SOLO dove il vetro sta stabilmente su contenuti
+       scuri e serve un elemento chiaro per contrasto — non come alternativa
+       a piacere allo standard qui sopra. */
+    --vetro-chiaro-bg: rgba(255,251,244,.62);
+    --vetro-chiaro-testo: #4A2E20;
     --shadow-1: 0 1px 2px rgba(20,20,20,.04), 0 8px 20px rgba(20,20,20,.06);
     --shadow-2: 0 2px 8px rgba(20,20,20,.06), 0 16px 36px rgba(20,20,20,.10);
     --r-sm:10px; --r-md:16px; --r-lg:22px; --r-xl:28px; --r-pill:999px;
@@ -226,23 +261,32 @@
     padding: calc(env(safe-area-inset-top) + 10px) 18px 0;
   }
   .hero-topbar .brand{ color:#FFF9EE; }
+  /* Stesso vetro della pillola (blocco VETRO in :root): sta anche lui sopra la
+     foto, con icona chiara. Prima aveva numeri suoi (blur 14, velo bianco 20%)
+     e si vedeva: due vetri diversi nella stessa schermata. */
   .icon-btn.glass{
-    background: rgba(255,255,255,.2);
-    border-color: rgba(255,255,255,.4);
-    color:#FFF9EE;
-    backdrop-filter: blur(14px) saturate(160%);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
+    background: var(--vetro-bg);
+    border: var(--vetro-bordo);
+    color: var(--vetro-testo);
+    backdrop-filter: var(--vetro-filtro);
+    -webkit-backdrop-filter: var(--vetro-filtro);
   }
   .weather-pill{
     position:absolute; z-index:3; top: calc(env(safe-area-inset-top) + 62px); left:16px;
     display:flex; align-items:center; gap:8px;
-    background: rgba(255,251,244,.72); backdrop-filter: blur(14px) saturate(160%);
-    -webkit-backdrop-filter: blur(14px) saturate(160%);
-    border:1px solid rgba(255,255,255,.5);
+    /* Variante CHIARA del vetro (blocco VETRO in :root): qui il vetro sta
+       sempre sopra la foto, quindi un elemento chiaro con testo scuro è voluto
+       — è l'unico punto in cui la variante chiara è giustificata. Sfocatura,
+       bordo e ombra restano però quelli dello standard, così è riconoscibile
+       come lo stesso materiale della pillola. */
+    background: var(--vetro-chiaro-bg);
+    backdrop-filter: var(--vetro-filtro);
+    -webkit-backdrop-filter: var(--vetro-filtro);
+    border: var(--vetro-bordo);
     border-radius: var(--r-pill); padding:7px 14px 7px 8px;
   }
   .weather-pill .sun{ width:24px; height:24px; }
-  .weather-pill .t{ font-family:var(--font-display); font-size:1rem; font-weight:560; color:#4A2E20; }
+  .weather-pill .t{ font-family:var(--font-display); font-size:1rem; font-weight:560; color: var(--vetro-chiaro-testo); }
   .weather-pill .cap{ font-size:.63rem; color:#8A5A42; display:block; line-height:1.1; }
 
   .hero-botfade{
@@ -423,34 +467,21 @@
   .tabbar-inner{
     pointer-events:auto;
     display:flex; gap:2px;
-    /* Vetro CHIARO (non più un velo scuro): il velo bianco tiene la pillola sempre
-       più chiara di ciò che le scorre sotto, così le voci in grigio scuro restano
-       leggibili qualunque cosa passi — foto, mappa o card bianche. Con un velo
-       scuro e testo bianco succedeva il contrario: sopra i contenuti chiari, che
-       nell'app sono la maggior parte, il testo spariva.
-       La sfocatura resta bassa (24px) perché è quella che fa "intravedere" le
-       forme sotto invece di ridurle a una macchia di colore. */
-    background: rgba(255,255,255,.55);
-    backdrop-filter: blur(24px) saturate(180%);
-    -webkit-backdrop-filter: blur(24px) saturate(180%);
-    border: 1px solid rgba(255,255,255,.65);
+    /* Vetro standard dell'app — vedi il blocco VETRO in :root. Nessun numero
+       qui: la pillola è l'elemento su cui lo standard è stato calibrato, e da
+       lì lo eredita come tutti gli altri. */
+    background: var(--vetro-bg);
+    backdrop-filter: var(--vetro-filtro);
+    -webkit-backdrop-filter: var(--vetro-filtro);
+    border: var(--vetro-bordo);
+    box-shadow: var(--vetro-ombra);
     border-radius: var(--r-pill); padding:6px;
-    /* L'ombra che la stacca dal contenuto: una diffusa e larga per il distacco,
-       una corta e stretta subito sotto il bordo per farla "appoggiare". */
-    box-shadow:
-      0 12px 32px -8px rgba(20,14,10,.34),
-      0 3px 8px -2px rgba(20,14,10,.14);
   }
-  :root[data-theme="dark"] .tabbar-inner{
-    background: rgba(46,44,42,.55); border-color: rgba(255,255,255,.14);
-  }
-  :root[data-theme="dark"] .tab:not(.active){ color:#E4E4E6; } /* :not(.active) o vincerebbe
-    per specificità anche sulla voce selezionata, che deve restare bianca sul rosso */
   .tab{
-    border:none; background:transparent; color:#3A3A3C; display:flex; flex-direction:column; align-items:center;
+    border:none; background:transparent; color: var(--vetro-testo);
+    display:flex; flex-direction:column; align-items:center;
     gap:3px; padding:9px 20px; border-radius: var(--r-pill); cursor:pointer; font-size:.64rem; font-weight:600;
-    /* grigio scuro, non bianco: sta sopra il vetro chiaro. Le icone seguono da sole,
-       usano currentColor. Niente text-shadow: su fondo chiaro sporcherebbe e basta. */
+    /* Le icone seguono da sole: sono disegnate con stroke="currentColor". */
   }
   .tab .ico{ display:flex; }
   .tab svg{ width:20px; height:20px; }
