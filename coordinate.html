@@ -1,0 +1,733 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Coordinate tappe</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:400 15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+       background:#FAFAF9;color:#1C1C1E}
+  header{padding:calc(env(safe-area-inset-top) + 12px) 14px 12px;background:#fff;
+         border-bottom:1px solid #EAEAE8;position:sticky;top:0;z-index:500}
+  h1{font-size:17px;font-weight:600}
+  p.sub{font-size:13px;color:#8E8E93;margin-top:2px}
+  .barra{height:6px;background:#ECECEE;border-radius:99px;margin-top:10px;overflow:hidden}
+  .barra i{display:block;height:100%;width:0;background:#F5503C;transition:width .2s}
+  .stato{font-size:12px;color:#8E8E93;margin-top:6px;font-variant-numeric:tabular-nums}
+  #map{height:58vh;width:100%}
+  .legenda{display:flex;gap:14px;padding:10px 14px;font-size:12px;color:#8E8E93;
+           background:#fff;border-bottom:1px solid #EAEAE8}
+  .legenda b{display:inline-block;width:9px;height:9px;border-radius:50%;margin-right:5px}
+  .lista{padding:8px 0 40px}
+  .riga{display:flex;gap:10px;align-items:flex-start;padding:9px 14px;border-bottom:1px solid #F2F2F1}
+  .riga .n{flex:none;width:22px;height:22px;border-radius:50%;color:#fff;font-size:11px;
+           font-weight:700;display:flex;align-items:center;justify-content:center}
+  .riga .txt{flex:1;min-width:0}
+  .riga .t{font-size:14px;font-weight:600}
+  .riga .q{font-size:12px;color:#8E8E93;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .riga .c{font:11px/1.4 'SF Mono',Menlo,monospace;color:#8E8E93;margin-top:2px}
+  .azioni{padding:16px 14px 40px}
+  button{width:100%;padding:14px;border:none;border-radius:14px;background:#F5503C;color:#fff;
+         font:600 15px inherit;font-family:inherit;margin-bottom:8px}
+  button.sec{background:#fff;color:#1C1C1E;border:1px solid #EAEAE8}
+  textarea{width:100%;height:180px;margin-top:10px;padding:10px;border:1px solid #EAEAE8;
+           border-radius:12px;font:11px/1.5 'SF Mono',Menlo,monospace;background:#fff}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Coordinate delle 52 tappe</h1>
+  <p class="sub">Le cerco su OpenStreetMap una alla volta. Poi guarda la mappa: se un pin
+     è nel posto sbagliato si vede subito.</p>
+  <div class="barra"><i id="prog"></i></div>
+  <div class="stato" id="stato">pronto</div>
+</header>
+
+<div id="map"></div>
+
+<div class="legenda">
+  <span><b style="background:#4CAF6C"></b>trovata online</span>
+  <span><b style="background:#E7A94F"></b>coordinata di riserva</span>
+  <span><b style="background:#F5503C"></b>da controllare</span>
+</div>
+
+<div class="lista" id="lista"></div>
+
+<div class="azioni">
+  <button id="vai">Cerca le coordinate</button>
+  <button class="sec" id="copia">Copia il risultato per Claude</button>
+  <textarea id="out" readonly placeholder="Qui comparirà il risultato da rimandarmi"></textarea>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+var STOPS = [
+{
+"id": "s101",
+"day": "d1",
+"time": "14:55",
+"title": "Volo AZ0792 Roma → Tokyo",
+"q": "Aeroporto di Roma Fiumicino",
+"fb": [
+41.8003,
+12.2389
+]
+},
+{
+"id": "s201",
+"day": "d2",
+"time": "10:25",
+"title": "Atterraggio a Tokyo Haneda",
+"q": "Tokyo Haneda Airport",
+"fb": [
+35.5494,
+139.7798
+]
+},
+{
+"id": "s202",
+"day": "d2",
+"time": "11:30",
+"title": "Trasferimento in hotel (mezzi pubblici)",
+"q": "Ikebukuro Station, Tokyo",
+"fb": [
+35.7295,
+139.7109
+]
+},
+{
+"id": "s203",
+"day": "d2",
+"time": "14:00",
+"title": "Check-in Sunshine City Prince Hotel",
+"q": "Sunshine City Prince Hotel, Ikebukuro, Tokyo",
+"fb": [
+35.7295,
+139.7195
+]
+},
+{
+"id": "s204",
+"day": "d2",
+"time": "18:30",
+"title": "Passeggiata serale leggera",
+"q": "Ikebukuro, Tokyo",
+"fb": [
+35.7289,
+139.71
+]
+},
+{
+"id": "s301",
+"day": "d3",
+"time": "09:00",
+"title": "Senso-ji",
+"q": "Senso-ji, Asakusa, Tokyo",
+"fb": [
+35.7148,
+139.7967
+]
+},
+{
+"id": "s302",
+"day": "d3",
+"time": "10:15",
+"title": "Nakamise-dori",
+"q": "Nakamise-dori, Asakusa, Tokyo",
+"fb": [
+35.7128,
+139.796
+]
+},
+{
+"id": "s303",
+"day": "d3",
+"time": "11:30",
+"title": "Tokyo Skytree",
+"q": "Tokyo Skytree, Tokyo",
+"fb": [
+35.7101,
+139.8107
+]
+},
+{
+"id": "s304",
+"day": "d3",
+"time": "13:30",
+"title": "Pranzo con la guida",
+"q": "Tokyo",
+"fb": [
+35.6812,
+139.7671
+]
+},
+{
+"id": "s305",
+"day": "d3",
+"time": "15:00",
+"title": "Akihabara",
+"q": "Akihabara, Tokyo",
+"fb": [
+35.6984,
+139.7731
+]
+},
+{
+"id": "s401",
+"day": "d4",
+"time": "10:00",
+"title": "Esperienza di guida JDM (stile Fast & Furious)",
+"q": "Tokyo",
+"fb": [
+35.6812,
+139.7671
+]
+},
+{
+"id": "s402",
+"day": "d4",
+"time": "16:00",
+"title": "Resto della giornata libero",
+"q": "Tokyo",
+"fb": [
+35.6812,
+139.7671
+]
+},
+{
+"id": "s501",
+"day": "d5",
+"time": "09:00",
+"title": "Walking Tour \\",
+"q": "Tokyo",
+"fb": [
+35.6812,
+139.7671
+]
+},
+{
+"id": "s502",
+"day": "d5",
+"time": "12:30",
+"title": "Spedizione bagagli Tokyo → Kyoto",
+"q": "Tokyo",
+"fb": [
+35.6812,
+139.7671
+]
+},
+{
+"id": "s503",
+"day": "d5",
+"time": "14:00",
+"title": "Trasferimento a Hakone (Romance Car)",
+"q": "Hakone-Yumoto Station",
+"fb": [
+35.2325,
+139.1063
+]
+},
+{
+"id": "s504",
+"day": "d5",
+"time": "16:30",
+"title": "Check-in Aura Tachibana",
+"q": "Aura Tachibana, Hakone",
+"fb": [
+35.2337,
+139.1042
+]
+},
+{
+"id": "s505",
+"day": "d5",
+"time": "18:00",
+"title": "Cena kaiseki",
+"q": "Hakone",
+"fb": [
+35.2324,
+139.1069
+]
+},
+{
+"id": "s601",
+"day": "d6",
+"time": "09:00",
+"title": "Owakudani",
+"q": "Owakudani, Hakone",
+"fb": [
+35.2445,
+139.0197
+]
+},
+{
+"id": "s602",
+"day": "d6",
+"time": "11:30",
+"title": "Crociera sul Lago Ashi",
+"q": "Lake Ashi, Hakone",
+"fb": [
+35.2065,
+139.0083
+]
+},
+{
+"id": "s603",
+"day": "d6",
+"time": "13:00",
+"title": "Hakone Shrine",
+"q": "Hakone Shrine, Hakone",
+"fb": [
+35.2043,
+139.0257
+]
+},
+{
+"id": "s604",
+"day": "d6",
+"time": "15:00",
+"title": "Trasferimento a Kanazawa (JR)",
+"q": "Kanazawa Station",
+"fb": [
+36.578,
+136.648
+]
+},
+{
+"id": "s605",
+"day": "d6",
+"time": "18:30",
+"title": "Check-in Holiday Inn ANA Kanazawa Sky",
+"q": "Holiday Inn ANA Kanazawa Sky",
+"fb": [
+36.5688,
+136.656
+]
+},
+{
+"id": "s701",
+"day": "d7",
+"time": "09:00",
+"title": "Kenroku-en",
+"q": "Kenrokuen, Kanazawa",
+"fb": [
+36.562,
+136.6626
+]
+},
+{
+"id": "s702",
+"day": "d7",
+"time": "11:00",
+"title": "Higashi Chaya",
+"q": "Higashi Chaya District, Kanazawa",
+"fb": [
+36.5722,
+136.6663
+]
+},
+{
+"id": "s703",
+"day": "d7",
+"time": "13:30",
+"title": "Trasferimento a Kyoto (JR)",
+"q": "Kyoto Station",
+"fb": [
+34.9858,
+135.7588
+]
+},
+{
+"id": "s704",
+"day": "d7",
+"time": "16:30",
+"title": "Check-in Oriental Hotel Kyoto Rokujo",
+"q": "Oriental Hotel Kyoto Rokujo",
+"fb": [
+34.9885,
+135.762
+]
+},
+{
+"id": "s705",
+"day": "d7",
+"time": "19:00",
+"title": "Gion",
+"q": "Gion, Kyoto",
+"fb": [
+35.0037,
+135.7752
+]
+},
+{
+"id": "s801",
+"day": "d8",
+"time": "09:00",
+"title": "Kinkaku-ji",
+"q": "Kinkaku-ji, Kyoto",
+"fb": [
+35.0394,
+135.7292
+]
+},
+{
+"id": "s802",
+"day": "d8",
+"time": "11:00",
+"title": "Arashiyama Bamboo Grove",
+"q": "Arashiyama Bamboo Grove, Kyoto",
+"fb": [
+35.017,
+135.6714
+]
+},
+{
+"id": "s803",
+"day": "d8",
+"time": "12:30",
+"title": "Pranzo ad Arashiyama",
+"q": "Arashiyama, Kyoto",
+"fb": [
+35.0094,
+135.6668
+]
+},
+{
+"id": "s804",
+"day": "d8",
+"time": "15:00",
+"title": "Nishiki Market",
+"q": "Nishiki Market, Kyoto",
+"fb": [
+35.005,
+135.7649
+]
+},
+{
+"id": "s900",
+"day": "d9",
+"time": "08:00",
+"title": "Attivazione Kansai-Hiroshima Area Pass",
+"q": "Kyoto Station",
+"fb": [
+34.9858,
+135.7588
+]
+},
+{
+"id": "s901",
+"day": "d9",
+"time": "08:30",
+"title": "Kiyomizu-dera",
+"q": "Kiyomizu-dera, Kyoto",
+"fb": [
+34.9949,
+135.785
+]
+},
+{
+"id": "s902",
+"day": "d9",
+"time": "10:15",
+"title": "Higashiyama & Sannen-zaka",
+"q": "Sannenzaka, Kyoto",
+"fb": [
+34.9963,
+135.7809
+]
+},
+{
+"id": "s903",
+"day": "d9",
+"time": "13:00",
+"title": "Fushimi Inari Taisha & Nara (Todai-ji, Kasuga Taisha)",
+"q": "Fushimi Inari Taisha, Kyoto",
+"fb": [
+34.9671,
+135.7727
+]
+},
+{
+"id": "s1001",
+"day": "d10",
+"time": "08:30",
+"title": "Checkout & spedizione bagagli",
+"q": "Kyoto Station",
+"fb": [
+34.9858,
+135.7588
+]
+},
+{
+"id": "s1002",
+"day": "d10",
+"time": "10:00",
+"title": "Trasferimento a Hiroshima (Shinkansen)",
+"q": "Hiroshima Station",
+"fb": [
+34.3979,
+132.4757
+]
+},
+{
+"id": "s1003",
+"day": "d10",
+"time": "13:00",
+"title": "Check-in Granvia Hiroshima",
+"q": "Granvia Hiroshima",
+"fb": [
+34.3975,
+132.4747
+]
+},
+{
+"id": "s1004",
+"day": "d10",
+"time": "15:30",
+"title": "Pomeriggio libero",
+"q": "Hiroshima",
+"fb": [
+34.3853,
+132.4553
+]
+},
+{
+"id": "s1101",
+"day": "d11",
+"time": "09:00",
+"title": "Peace Memorial Park & Museo",
+"q": "Hiroshima Peace Memorial Park",
+"fb": [
+34.3955,
+132.4536
+]
+},
+{
+"id": "s1102",
+"day": "d11",
+"time": "13:30",
+"title": "Traghetto per Miyajima",
+"q": "Miyajima Ferry Terminal",
+"fb": [
+34.2977,
+132.3232
+]
+},
+{
+"id": "s1103",
+"day": "d11",
+"time": "14:30",
+"title": "Santuario di Itsukushima",
+"q": "Itsukushima Shrine, Miyajima",
+"fb": [
+34.296,
+132.3197
+]
+},
+{
+"id": "s1104",
+"day": "d11",
+"time": "17:00",
+"title": "Check-in ryokan Iwaso",
+"q": "Iwaso Ryokan, Miyajima",
+"fb": [
+34.2937,
+132.3193
+]
+},
+{
+"id": "s1201",
+"day": "d12",
+"time": "09:30",
+"title": "Passeggiata sull'isola e cervi",
+"q": "Miyajima Island",
+"fb": [
+34.286,
+132.32
+]
+},
+{
+"id": "s1202",
+"day": "d12",
+"time": "14:00",
+"title": "Giornata libera, senza programma",
+"q": "Miyajima Island",
+"fb": [
+34.286,
+132.32
+]
+},
+{
+"id": "s1301",
+"day": "d13",
+"time": "10:00",
+"title": "Trasferimento a Osaka",
+"q": "Osaka Station",
+"fb": [
+34.7025,
+135.4959
+]
+},
+{
+"id": "s1302",
+"day": "d13",
+"time": "14:00",
+"title": "Check-in Moxy Osaka Honmachi by Marriott",
+"q": "Moxy Osaka Honmachi by Marriott",
+"fb": [
+34.682,
+135.501
+]
+},
+{
+"id": "s1303",
+"day": "d13",
+"time": "17:00",
+"title": "Shinsekai",
+"q": "Shinsekai, Osaka",
+"fb": [
+34.6522,
+135.5063
+]
+},
+{
+"id": "s1304",
+"day": "d13",
+"time": "19:30",
+"title": "Dotonbori",
+"q": "Dotonbori, Osaka",
+"fb": [
+34.6687,
+135.5013
+]
+},
+{
+"id": "s1401",
+"day": "d14",
+"time": "06:30",
+"title": "Checkout & trasferimento a Kansai Airport",
+"q": "Kansai International Airport",
+"fb": [
+34.4342,
+135.2328
+]
+},
+{
+"id": "s1402",
+"day": "d14",
+"time": "09:20",
+"title": "Volo interno Osaka → Tokyo Haneda",
+"q": "Kansai International Airport",
+"fb": [
+34.4342,
+135.2328
+]
+},
+{
+"id": "s1403",
+"day": "d14",
+"time": "12:45",
+"title": "Volo Tokyo Haneda → Roma Fiumicino",
+"q": "Tokyo Haneda Airport",
+"fb": [
+35.5494,
+139.7798
+]
+}
+];
+
+var map = L.map('map').setView([36.2, 137.5], 5);
+L.tileLayer('https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png', {
+  attribution: '&copy; OpenStreetMap &copy; CARTO', subdomains:'abcd', maxZoom:19
+}).addTo(map);
+
+var COL = { ok:'#4CAF6C', fb:'#E7A94F', warn:'#F5503C' };
+var gruppo = L.layerGroup().addTo(map);
+
+function pin(lat, lon, n, colore, testo){
+  var m = L.circleMarker([lat,lon], {radius:9, color:'#fff', weight:2,
+          fillColor:colore, fillOpacity:1}).addTo(gruppo);
+  m.bindPopup('<b>'+n+'.</b> '+testo);
+  return m;
+}
+
+function disegna(){
+  gruppo.clearLayers();
+  var punti = [];
+  STOPS.forEach(function(s, i){
+    if (!s.lat) return;
+    pin(s.lat, s.lon, i+1, COL[s.src] || COL.warn, s.title);
+    punti.push([s.lat, s.lon]);
+  });
+  if (punti.length) map.fitBounds(punti, {padding:[30,30]});
+  lista();
+  document.getElementById('out').value = JSON.stringify(
+    STOPS.map(function(s){ return {id:s.id, lat:s.lat, lon:s.lon, src:s.src}; }));
+}
+
+function lista(){
+  var c = document.getElementById('lista');
+  c.innerHTML = '';
+  STOPS.forEach(function(s, i){
+    var d = document.createElement('div');
+    d.className = 'riga';
+    var col = COL[s.src] || '#C7C7CC';
+    d.innerHTML =
+      '<div class="n" style="background:'+col+'">'+(i+1)+'</div>' +
+      '<div class="txt"><div class="t">'+s.title+'</div>' +
+      '<div class="q">'+s.q+'</div>' +
+      '<div class="c">'+(s.lat ? s.lat.toFixed(5)+', '+s.lon.toFixed(5) +
+        (s.src==='fb' ? '  (di riserva)' : '') : '—')+'</div></div>';
+    d.onclick = function(){
+      if (s.lat) { map.setView([s.lat, s.lon], 15); window.scrollTo({top:0, behavior:'smooth'}); }
+    };
+    c.appendChild(d);
+  });
+}
+
+function dist(a, b, c, d){ // km, approssimata
+  var dx = (a-c)*111, dy = (b-d)*111*Math.cos(a*Math.PI/180);
+  return Math.sqrt(dx*dx + dy*dy);
+}
+
+document.getElementById('vai').onclick = function(){
+  var btn = this; btn.disabled = true; btn.textContent = 'cerco…';
+  var i = 0;
+  function passo(){
+    if (i >= STOPS.length){
+      btn.textContent = 'Fatto'; document.getElementById('stato').textContent =
+        'finito — controlla la mappa'; disegna(); return;
+    }
+    var s = STOPS[i];
+    document.getElementById('stato').textContent = (i+1)+' / '+STOPS.length+'  ·  '+s.q;
+    document.getElementById('prog').style.width = ((i+1)/STOPS.length*100)+'%';
+    fetch('https://nominatim.openstreetmap.org/search?format=json&limit=1&q=' +
+          encodeURIComponent(s.q))
+      .then(function(r){ return r.json(); })
+      .then(function(j){
+        if (j && j.length){
+          s.lat = parseFloat(j[0].lat); s.lon = parseFloat(j[0].lon); s.src = 'ok';
+          // se si discosta molto dalla mia stima, va guardata
+          if (s.fb && dist(s.lat, s.lon, s.fb[0], s.fb[1]) > 3) s.src = 'warn';
+        } else if (s.fb){ s.lat = s.fb[0]; s.lon = s.fb[1]; s.src = 'fb'; }
+      })
+      .catch(function(){ if (s.fb){ s.lat = s.fb[0]; s.lon = s.fb[1]; s.src = 'fb'; } })
+      .then(function(){ i++; disegna(); setTimeout(passo, 1100); });
+  }
+  passo();
+};
+
+document.getElementById('copia').onclick = function(){
+  var t = document.getElementById('out'); t.select();
+  try { document.execCommand('copy'); this.textContent = 'copiato'; } catch(e){}
+};
+
+// all'avvio mostro subito le coordinate di riserva, così la mappa non è vuota
+STOPS.forEach(function(s){ if (s.fb){ s.lat = s.fb[0]; s.lon = s.fb[1]; s.src = 'fb'; } });
+disegna();
+</script>
+</body>
+</html>
