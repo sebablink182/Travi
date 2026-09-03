@@ -501,22 +501,3 @@
   .login-note{ text-align:center; font-size:.7rem; color:var(--text-muted); margin-top:16px; line-height:1.4; }
   [hidden]{ display:none !important; }
   .signout-link{ display:block; text-align:center; font-size:.75rem; color:var(--text-muted); margin:6px 0 90px; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
-
-  /* =====================================================================
-     TEST TEMPORANEO — sfondo verde fosforescente per stanare la banda
-     bianca in fondo. Se qualcosa che il nostro CSS controlla causa la
-     banda, ora si vedrebbe verde come tutto il resto; se resta bianca
-     nonostante questo, vuol dire che non è affatto una nostra superficie
-     (sfondo, card, contenitore) ma qualcosa che il nostro codice non
-     dipinge — quindi fuori dalla pagina. DA RIMUOVERE non appena trovata
-     la causa: non è pensato per restare nell'app.
-     ===================================================================== */
-  :root{
-    --bg: #39FF14;
-    --bg-2: #39FF14;
-    --surface: #2EE60D;
-    --surface-2: #25CC00;
-  }
-  html, body, .stage, .shell, .view, .scroll{
-    background: #39FF14 !important;
-  }
