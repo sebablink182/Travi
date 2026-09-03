@@ -59,6 +59,9 @@
     line-height:1.4;
     min-height:100%;
     touch-action:pan-y;
+    overscroll-behavior-y: contain; /* il rimbalzo resta attivo (serve per la striscia in fondo),
+      ma non deve "sfondare" oltre la pagina stessa (niente pull-to-refresh/gesti di sistema
+      innescati dal trascinamento). */
     /* PRIMA qui c'erano overflow:hidden + position:fixed;inset:0 + overscroll-behavior:none,
        per bloccare del tutto lo scroll della pagina (solo i .scroll interni potevano scorrere).
        Bloccando anche il "rimbalzo" nativo della pagina a livello di documento, però, iOS
