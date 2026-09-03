@@ -423,16 +423,25 @@
   .tabbar-inner{
     pointer-events:auto;
     display:flex; gap:2px;
-    background: rgba(30,30,32,.22);
-    backdrop-filter: blur(38px) saturate(220%);
-    -webkit-backdrop-filter: blur(38px) saturate(220%);
-    border: 1px solid rgba(255,255,255,.22);
+    /* Vetro: velo scuro leggero + sfocatura meno spinta di prima, così sotto si
+       intravede davvero il contenuto che scorre invece di essere solo un colore. */
+    background: rgba(30,30,32,.13);
+    backdrop-filter: blur(24px) saturate(200%);
+    -webkit-backdrop-filter: blur(24px) saturate(200%);
+    border: 1px solid rgba(255,255,255,.30);
     border-radius: var(--r-pill); padding:6px;
+    /* L'ombra che la stacca dal contenuto: una diffusa e larga per il distacco,
+       una corta e stretta subito sotto il bordo per farla "appoggiare". */
+    box-shadow:
+      0 12px 32px -8px rgba(20,14,10,.34),
+      0 3px 8px -2px rgba(20,14,10,.14);
   }
   :root[data-theme="dark"] .tabbar-inner{ background: rgba(10,9,7,.26); }
   .tab{
     border:none; background:transparent; color:#D8D8DA; display:flex; flex-direction:column; align-items:center;
     gap:3px; padding:9px 20px; border-radius: var(--r-pill); cursor:pointer; font-size:.64rem; font-weight:600;
+    text-shadow: 0 1px 3px rgba(20,14,10,.35); /* con il vetro più trasparente le voci
+      non attive passano sopra contenuti chiari: l'ombra del testo le tiene leggibili */
   }
   .tab .ico{ display:flex; }
   .tab svg{ width:20px; height:20px; }
