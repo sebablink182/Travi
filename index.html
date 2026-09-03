@@ -239,5 +239,27 @@
 </div>
 
 <script type="module" src="js/app.js"></script>
+<script>
+  // Effetto "foto incollata in alto" nella Home, senza usare position:sticky
+  // (che su questo iPhone fa tornare la banda bianca in fondo allo schermo —
+  // vedi la nota in style.css su .hero). Stesso risultato visivo, ottenuto
+  // spostando la foto con un transform mentre si scorre: da 0 a --hero-sliver
+  // px scorre insieme al contenuto come sempre; oltre quel punto resta ferma,
+  // mostrando solo lo scampolo di foto sotto la status bar, per il resto dello
+  // scroll — esattamente come faceva prima.
+  (function () {
+    var scrollEl = document.querySelector("#view-home .scroll");
+    var hero = document.getElementById("home-hero");
+    if (!scrollEl || !hero) return;
+    var heroH = 424, heroSliver = 132; // devono combaciare con --hero-h/--hero-sliver in style.css
+    var maxShift = heroH - heroSliver;
+    function onScroll() {
+      var extra = Math.max(0, scrollEl.scrollTop - maxShift);
+      hero.style.transform = extra ? "translateY(" + extra + "px)" : "";
+    }
+    scrollEl.addEventListener("scroll", onScroll, { passive: true });
+    onScroll();
+  })();
+</script>
 </body>
 </html>
