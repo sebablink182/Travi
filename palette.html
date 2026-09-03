@@ -1,0 +1,209 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Palette">
+<title>Palette — confronto</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; -webkit-tap-highlight-color:transparent; }
+
+  /* ---------- PALETTE ATTUALE (quella dell'app oggi) ---------- */
+  :root{
+    --bg:#FAFAF9; --bg-2:#ECECEE; --surface:#FFFFFF; --surface-2:#F2F2F1;
+    --border:#EAEAE8; --text:#1C1C1E; --text-muted:#8E8E93; --text-faint:#C7C7CC;
+    --accent:#F5503C; --accent-2:#FF7A54;
+    --p1:#FF7A54; --p2:#E7A94F; --p3:#4CAF6C; --p4:#8FA3AD;
+    --p1-ink:#5A2110; --p2-ink:#5A3D10; --p3-ink:#123B21; --p4-ink:#1E2E36;
+  }
+  /* ---------- PALETTE DEL DESIGN SYSTEM (dai file originali) ---------- */
+  :root[data-p="spec"]{
+    --bg:#FAFAF8; --bg-2:#F3F1EE; --surface:#FFFFFF; --surface-2:#F3F1EE;
+    --border:#E8E4E1; --text:#1C1C1E; --text-muted:#6B6B6B; --text-faint:#D7D2CD;
+    --accent:#E65D4A; --accent-2:#F4A896;
+    --p1:#F4A896; --p2:#F7D7B8; --p3:#CDE7D6; --p4:#BFD6E8; --p5:#CBB7F6;
+    --p1-ink:#7A3324; --p2-ink:#7A5320; --p3-ink:#245C3E; --p4-ink:#274A61;
+  }
+
+  html{ height:100%; background:var(--bg); }
+  body{
+    height:100%; background:var(--bg); color:var(--text);
+    font:400 17px/24px -apple-system, BlinkMacSystemFont, "SF Pro Text", sans-serif;
+  }
+  .shell{ height:100vh; position:relative; overflow:hidden; display:flex; flex-direction:column;
+          background:var(--bg); }
+  .scroll{ flex:1; overflow-y:auto; padding-bottom:150px; scrollbar-width:none; }
+  .scroll::-webkit-scrollbar{ display:none; }
+
+  /* hero */
+  .hero{ position:relative; height:300px; border-radius:0 0 28px 28px; overflow:hidden; }
+  .hero-photo{ position:absolute; inset:0; background:url('assets/img/hero.jpg') center bottom/cover no-repeat; }
+  .hero-fade{ position:absolute; inset:0;
+    background:linear-gradient(to bottom, rgba(20,14,10,.42), rgba(20,14,10,0) 45%); }
+  .hero-txt{ position:absolute; left:20px; bottom:22px; color:#FFF9EE; }
+  .hero-txt .n{ font:600 34px/40px -apple-system, sans-serif; letter-spacing:-.01em; }
+  .hero-txt .s{ font-size:15px; line-height:20px; color:#F4E6D6; max-width:240px; }
+  .meteo{
+    position:absolute; top:calc(env(safe-area-inset-top) + 54px); left:16px;
+    display:flex; align-items:center; gap:8px; padding:7px 14px 7px 10px; border-radius:999px;
+    background:rgba(255,251,244,.62);
+    backdrop-filter:blur(5px) saturate(170%); -webkit-backdrop-filter:blur(5px) saturate(170%);
+    border:1px solid rgba(255,255,255,.30); color:#4A2E20;
+  }
+  .meteo b{ font:600 17px/22px -apple-system, sans-serif; }
+  .meteo span{ font-size:11px; line-height:16px; color:#8A5A42; }
+
+  /* card */
+  .card{ background:var(--surface); border:1px solid var(--border); border-radius:22px;
+         margin:16px; padding:16px; box-shadow:0 1px 2px rgba(20,20,20,.04), 0 8px 20px rgba(20,20,20,.06); }
+  .card .k{ font-size:11px; line-height:16px; letter-spacing:.06em; text-transform:uppercase; color:var(--text-muted); }
+  .card .t{ font:600 22px/28px -apple-system, sans-serif; letter-spacing:-.01em; margin-top:2px; }
+  .card .d{ font-size:13px; line-height:18px; color:var(--text-muted); margin-top:2px; }
+
+  h2{ font:600 22px/28px -apple-system, sans-serif; letter-spacing:-.01em; margin:22px 16px 0; }
+
+  .stats{ display:flex; background:var(--surface); border:1px solid var(--border);
+          border-radius:22px; margin:12px 16px; padding:18px 0; }
+  .stats div{ flex:1; text-align:center; }
+  .stats b{ display:block; font:600 28px/34px -apple-system, sans-serif; }
+  .stats span{ font-size:13px; line-height:18px; color:var(--text-muted); }
+
+  .barra{ height:8px; border-radius:99px; background:var(--surface-2); margin:12px 16px 0; overflow:hidden; }
+  .barra i{ display:block; height:100%; width:38%; border-radius:99px;
+            background:linear-gradient(90deg, var(--accent), var(--p2)); }
+
+  .chips{ display:flex; flex-wrap:wrap; gap:8px; margin:14px 16px 0; }
+  .chip{ display:flex; align-items:center; gap:6px; padding:8px 14px; border-radius:999px;
+         font-size:13px; line-height:18px; font-weight:600; border:1px solid transparent; }
+  .c0{ background:var(--surface); border-color:var(--border); color:var(--text); }
+  .c1{ background:var(--p1); color:var(--p1-ink); }
+  .c2{ background:var(--p2); color:var(--p2-ink); }
+  .c3{ background:var(--p3); color:var(--p3-ink); }
+  .c4{ background:var(--p4); color:var(--p4-ink); }
+
+  .btn{ display:block; margin:16px; padding:15px; border-radius:16px; border:none;
+        background:var(--accent); color:#fff; font:600 17px/22px inherit; font-family:inherit; width:calc(100% - 32px); }
+  .btn.sec{ background:var(--surface); color:var(--text); border:1px solid var(--border); }
+
+  /* tabbar col vetro definitivo */
+  .tabbar{ position:absolute; left:0; right:0; bottom:0; z-index:30; display:flex; justify-content:center;
+           padding:10px 0 calc(10px + env(safe-area-inset-bottom)); pointer-events:none; }
+  .pill{ pointer-events:auto; display:flex; gap:2px; padding:6px; border-radius:999px;
+         background:rgba(30,30,32,.22);
+         backdrop-filter:blur(5px) saturate(170%); -webkit-backdrop-filter:blur(5px) saturate(170%);
+         border:1px solid rgba(255,255,255,.30);
+         box-shadow:0 12px 32px -8px rgba(20,14,10,.25), 0 3px 8px -2px rgba(20,14,10,.10); }
+  .pill button{ border:none; background:transparent; color:#fff; padding:9px 20px; border-radius:999px;
+                font:600 11px/16px inherit; font-family:inherit; }
+  .pill button.on{ background:var(--accent); }
+
+  /* interruttore */
+  .sw{ position:absolute; left:8px; right:8px; top:calc(env(safe-area-inset-top) + 6px); z-index:70;
+       display:flex; gap:6px; background:rgba(18,18,20,.92); padding:5px; border-radius:13px;
+       box-shadow:0 10px 26px -8px rgba(0,0,0,.5); }
+  .sw button{ flex:1; border:none; background:transparent; color:#DDD; padding:9px 6px; border-radius:9px;
+              font:700 12px/16px inherit; font-family:inherit; }
+  .sw button.on{ background:#F5503C; color:#fff; }
+
+  .valori{ margin:20px 16px 0; padding:14px; border-radius:16px; background:var(--surface-2);
+           font:11px/1.7 'SF Mono', Menlo, monospace; color:var(--text-muted); white-space:pre-wrap; }
+</style>
+</head>
+<body>
+
+<div class="shell">
+  <div class="scroll">
+
+    <div class="hero">
+      <div class="hero-photo"></div>
+      <div class="hero-fade"></div>
+      <div class="meteo"><b>18–23°</b><span>clima tipico · maggio</span></div>
+      <div class="hero-txt">
+        <div class="n">244</div>
+        <div class="s">giorni al vostro primo passo in Giappone.</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="k">Prossima tappa</div>
+      <div class="t">Volo AZ0792 Roma → Tokyo</div>
+      <div class="d">14:55 · Roma Fiumicino → Tokyo Haneda</div>
+    </div>
+
+    <h2>Oggi in itinerario</h2>
+    <div class="barra"><i></i></div>
+    <div class="chips">
+      <div class="chip c0">Tutti</div>
+      <div class="chip c1">A piedi</div>
+      <div class="chip c2">Da vedere</div>
+      <div class="chip c3">Ristorante</div>
+      <div class="chip c4">Metro</div>
+    </div>
+
+    <h2>Il viaggio in breve</h2>
+    <div class="stats">
+      <div><b>14</b><span>giorni</span></div>
+      <div><b>6</b><span>città</span></div>
+      <div><b>52</b><span>tappe</span></div>
+    </div>
+
+    <button class="btn">Aggiungi al piano</button>
+    <button class="btn sec">Indicazioni</button>
+
+    <div class="valori" id="valori">—</div>
+  </div>
+
+  <div class="tabbar">
+    <div class="pill">
+      <button class="on">Home</button>
+      <button>Itinerario</button>
+      <button>Mappa</button>
+    </div>
+  </div>
+
+  <div class="sw">
+    <button id="b-ora" class="on">PALETTE ATTUALE</button>
+    <button id="b-spec">DESIGN SYSTEM</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  var R = document.documentElement;
+  var bOra = document.getElementById("b-ora");
+  var bSpec = document.getElementById("b-spec");
+  var out = document.getElementById("valori");
+
+  var TESTI = {
+    ora:
+      "PALETTE ATTUALE — grigi di sistema iOS\n" +
+      "sfondo    #FAFAF9\nsecondario #ECECEE   (freddo, azzurrino)\n" +
+      "bordi     #EAEAE8\ntesto 2°  #8E8E93   (grigio iOS)\n" +
+      "accento   #F5503C   (rosso-arancio acceso)\n" +
+      "colori    arancio · ambra · verde · blu-grigio",
+    spec:
+      "DESIGN SYSTEM — neutri caldi, accenti pastello\n" +
+      "sfondo    #FAFAF8\nsecondario #F3F1EE   (beige, carta)\n" +
+      "bordi     #E8E4E1\ntesto 2°  #6B6B6B   (grigio neutro)\n" +
+      "accento   #E65D4A   (corallo)\n" +
+      "colori    salmone · pesca · menta · cielo · lavanda"
+  };
+
+  function set(quale){
+    if (quale === "spec") R.setAttribute("data-p","spec");
+    else R.removeAttribute("data-p");
+    bOra.classList.toggle("on", quale !== "spec");
+    bSpec.classList.toggle("on", quale === "spec");
+    out.textContent = TESTI[quale === "spec" ? "spec" : "ora"];
+  }
+
+  bOra.onclick = function(){ set("ora"); };
+  bSpec.onclick = function(){ set("spec"); };
+  set("ora");
+})();
+</script>
+
+</body>
+</html>

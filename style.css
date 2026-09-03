@@ -57,7 +57,25 @@
     --shadow-2: 0 2px 8px rgba(20,20,20,.06), 0 16px 36px rgba(20,20,20,.10);
     --r-sm:10px; --r-md:16px; --r-lg:22px; --r-xl:28px; --r-pill:999px;
     --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
-    --font-display: "Fraunces", "Iowan Old Style", "Palatino Linotype", Georgia, serif;
+    /* TIPOGRAFIA — come da design system originale (03/09/2026): SF Pro Display
+       ovunque, non più Fraunces serif. Su iPhone -apple-system È SF Pro, e iOS
+       passa da solo alla variante "Display" (lettere più strette e crenatura più
+       fitta) sopra i 20px circa: per questo display e interfaccia possono
+       condividere la stessa famiglia senza appiattirsi.
+       Scala dal design system — usare queste, non numeri a occhio:
+           Display Large  34/40  600      Body      17/24  400
+           Headline       28/34  600      Callout   15/20  400
+           Title 1        22/28  600      Footnote  13/18  400
+           Title 2        17/22  500      Caption   11/16  400          */
+    --font-display: -apple-system, BlinkMacSystemFont, "SF Pro Display", system-ui, "Segoe UI", sans-serif;
+    --t-display: 600 34px/40px var(--font-display);
+    --t-headline: 600 28px/34px var(--font-display);
+    --t-title1:   600 22px/28px var(--font-display);
+    --t-title2:   500 17px/22px var(--font-display);
+    --t-body:     400 17px/24px var(--font-ui);
+    --t-callout:  400 15px/20px var(--font-ui);
+    --t-footnote: 400 13px/18px var(--font-ui);
+    --t-caption:  400 11px/16px var(--font-ui);
     --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --hero-h: 424px;      /* altezza totale della foto in home */
     --hero-sliver: 132px; /* quanto ne resta sempre visibile, incollato in alto, quando si scorre */
@@ -90,8 +108,8 @@
     background: var(--bg);
     color: var(--text);
     font-family: var(--font-ui);
-    font-size:15px;
-    line-height:1.4;
+    font-size:17px;   /* Body dello spec: 17/24 (era 15/1.4) */
+    line-height:24px;
     min-height:100vh; /* 100vh, non 100%: lo sfondo deve coprire tutti i 956px veri
       dello schermo, non fermarsi a 894 (vedi la nota su .stage) */
     touch-action:pan-y;
@@ -121,7 +139,7 @@
     fondo. Il link di uscita ora sta dentro .scroll della Home (vedi index.html), quindi qui
     non serve più nessun taglio: .stage/.shell restano già esattamente alti quanto lo schermo
     da soli, senza bisogno di essere "tagliati" da un contenitore intorno. */ }
-  h1,h2,h3,.display{ font-family: var(--font-display); font-weight:560; letter-spacing:-.01em; text-wrap:balance; }
+  h1,h2,h3,.display{ font-family: var(--font-display); font-weight:600; letter-spacing:-.01em; text-wrap:balance; }
   button{ font-family:inherit; }
   .num{ font-variant-numeric: tabular-nums; }
   ::selection{ background: var(--accent); color: var(--accent-ink); }
@@ -286,7 +304,7 @@
     border-radius: var(--r-pill); padding:7px 14px 7px 8px;
   }
   .weather-pill .sun{ width:24px; height:24px; }
-  .weather-pill .t{ font-family:var(--font-display); font-size:1rem; font-weight:560; color: var(--vetro-chiaro-testo); }
+  .weather-pill .t{ font-family:var(--font-display); font-size:1rem; font-weight:600; color: var(--vetro-chiaro-testo); }
   .weather-pill .cap{ font-size:.63rem; color:#8A5A42; display:block; line-height:1.1; }
 
   .hero-botfade{
@@ -336,7 +354,7 @@
   .next-card .glyph svg{ width:22px; height:22px; }
   .next-card .body{ flex:1; min-width:0; }
   .next-card .eyebrow{ font-size:.68rem; text-transform:uppercase; letter-spacing:.08em; color:var(--text-muted); }
-  .next-card .title{ font-family:var(--font-display); font-size:1.15rem; font-weight:560; margin-top:1px; }
+  .next-card .title{ font-family:var(--font-display); font-size:1.15rem; font-weight:600; margin-top:1px; }
   .next-card .meta{ font-size:.8rem; color:var(--text-muted); margin-top:2px; }
   .next-card .chev{ color:var(--text-faint); flex:none; }
 
@@ -393,7 +411,7 @@
   }
   .stopcard.done .thumb .dot{ background: var(--good); }
   .stopcard .content{ flex:1; min-width:0; }
-  .stopcard .title{ font-family:var(--font-display); font-size:1.02rem; font-weight:560; }
+  .stopcard .title{ font-family:var(--font-display); font-size:1.02rem; font-weight:600; }
   .stopcard .sub{ font-size:.78rem; color:var(--text-muted); margin-top:1px; }
   .stopcard .tags{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
   .chip{
