@@ -256,9 +256,14 @@
   })();
 </script>
 <script>
-  // Pannello numeri TEMPORANEO, di nuovo — ci serve un dato certo invece di
-  // continuare a indovinare dagli screenshot. Si toglie appena chiarito.
+  // Pannello numeri TEMPORANEO, di nuovo — stavolta con più righe, per capire
+  // ESATTAMENTE dove nella catena (html/body/#app-root/.stage) il numero si
+  // rimpicciolisce, invece di continuare a indovinare. La prima riga è un
+  // marcatore di versione scritto a mano: se dopo l'aggiornamento vedi ancora
+  // la versione vecchia, il sito non si è ripubblicato/ricaricato per davvero
+  // e i numeri sotto non vogliono dire niente. Si toglie tutto appena chiarito.
   (function () {
+    var BUILD = "BUILD 2026-09-03-b";
     function mount() {
       var hud = document.createElement("pre");
       hud.id = "debug-hud";
@@ -269,11 +274,18 @@
       document.body.appendChild(hud);
       function render() {
         var tb = document.querySelector(".tabbar");
-        var r = tb ? tb.getBoundingClientRect() : null;
+        var stage = document.querySelector(".stage");
+        var tr = tb ? tb.getBoundingClientRect() : null;
+        var sr = stage ? stage.getBoundingClientRect() : null;
         hud.textContent =
-          "innerHeight: " + window.innerHeight + "   SCREEN.height: " + window.screen.height +
+          BUILD +
+          "\ninnerHeight: " + window.innerHeight + "   screen.height: " + window.screen.height +
           "\ndifferenza: " + (window.screen.height - window.innerHeight) + "px" +
-          "\n.tabbar bottom: " + (r ? Math.round(r.bottom) : "n/a") + "px";
+          "\ndocEl.clientHeight: " + document.documentElement.clientHeight +
+          "\ndocEl.scrollHeight: " + document.documentElement.scrollHeight +
+          "\nbody.scrollHeight: " + document.body.scrollHeight +
+          "\n.stage rect.height: " + (sr ? Math.round(sr.height) : "n/a") +
+          "\n.tabbar bottom: " + (tr ? Math.round(tr.bottom) : "n/a") + "px";
       }
       render();
       window.addEventListener("resize", render);
