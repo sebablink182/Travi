@@ -265,25 +265,62 @@ import {
      Tutto il calcolo sta in js/giornata.js, qui c'è solo il disegno. */
   var ETICHETTA = { chiusa: "NON CI ARRIVI", incompleta: "TROPPO POCO", stretta: "PER UN PELO" };
 
+  // Simulazione: permette di guardare una giornata a un'ora diversa da adesso.
+  // Non è uno strumento da sviluppatore, è una funzione vera — la sera prima
+  // serve sapere che se domani si parte alle 10 invece che alle 9 salta l'ultima
+  // tappa. Vive qui dentro e non in una pagina a parte perché i dati del viaggio
+  // stanno dietro il login e non sono pubblicati (vedi .gitignore).
+  var simula = { attiva: false, minuti: 9 * 60 };
+
+  function oraDiAdesso() {
+    var o = new Date();
+    return o.getHours() * 60 + o.getMinutes();
+  }
+
   function renderStatoGiornata(dayId, list) {
     var box = document.getElementById("stato-giornata");
-    if (!box) return;
-    box.innerHTML = "";
+    if (!box || !window.Giornata) return;
     var d = dayById(dayId);
-    if (!d || d.date !== todayISO() || !window.Giornata) return; // solo oggi
+    if (!d) { box.innerHTML = ""; return; }
 
-    var ora = new Date();
-    var e = window.Giornata.calcola(list, ora.getHours() * 60 + ora.getMinutes(), window.TRAVI_ORARI);
-    if (e.stato === "finita") return;
+    var oggi = d.date === todayISO();
+    if (!oggi && !simula.attiva) {
+      box.innerHTML = '<button class="prova-apri" id="prova-apri">Prova questa giornata a un altro orario</button>';
+      document.getElementById("prova-apri").onclick = function () {
+        simula.attiva = true;
+        var prima = list.length ? window.Giornata.min(list[0].time) : 9 * 60;
+        simula.minuti = prima != null ? prima : 9 * 60;
+        renderStatoGiornata(dayId, list);
+      };
+      return;
+    }
+
+    var minuti = simula.attiva ? simula.minuti : oraDiAdesso();
+    var e = window.Giornata.calcola(list, minuti, window.TRAVI_ORARI);
+
+    var html = "";
+    if (simula.attiva) {
+      html += '<div class="prova-barra">' +
+        '<b id="prova-ora">' + window.Giornata.hhmm(minuti) + "</b>" +
+        '<input type="range" id="prova-slider" min="300" max="1380" step="5" value="' + minuti + '">' +
+        '<button id="prova-chiudi">✕</button></div>';
+    }
+
+    if (e.stato === "finita") {
+      html += '<div class="stato-g bene"><div class="cap"><div class="titolo">Giornata completata</div></div></div>';
+      box.innerHTML = html;
+      agganciaProva(dayId, list);
+      return;
+    }
 
     var inRitardo = e.ritardo > 15;
     var titolo;
-    if (e.stato === "non-iniziata") titolo = "La giornata non è ancora cominciata";
+    if (e.stato === "non-iniziata") titolo = "Non ancora cominciata";
     else if (inRitardo) titolo = "In ritardo di " + e.ritardo + " min";
     else if (e.ritardo < -15) titolo = "In anticipo di " + Math.abs(e.ritardo) + " min";
     else titolo = "In orario";
 
-    var html = '<div class="stato-g ' + (e.problemi.length ? "tardi" : (inRitardo ? "" : "bene")) + '">' +
+    html += '<div class="stato-g ' + (e.problemi.length ? "tardi" : (inRitardo ? "" : "bene")) + '">' +
       '<div class="cap"><div class="titolo">' + titolo + "</div>" +
       '<div class="fine">fine prevista ' + e.finePrevista + "</div></div>";
 
@@ -310,7 +347,30 @@ import {
               sug.perse.map(escapeHtml).join("</b> e <b>") +
               "</b> conviene spostarli a un altro giorno.</div>";
     }
+    if (!simula.attiva) {
+      html += '<button class="prova-apri dentro" id="prova-apri">Prova a un altro orario</button>';
+    }
     box.innerHTML = html + "</div>";
+    agganciaProva(dayId, list);
+  }
+
+  function agganciaProva(dayId, list) {
+    var apri = document.getElementById("prova-apri");
+    if (apri) apri.onclick = function () {
+      simula.attiva = true; simula.minuti = oraDiAdesso();
+      renderStatoGiornata(dayId, list);
+    };
+    var chiudi = document.getElementById("prova-chiudi");
+    if (chiudi) chiudi.onclick = function () {
+      simula.attiva = false; renderStatoGiornata(dayId, list);
+    };
+    var sl = document.getElementById("prova-slider");
+    if (sl) sl.oninput = function () {
+      simula.minuti = +this.value;
+      renderStatoGiornata(dayId, list);
+      var n = document.getElementById("prova-slider");
+      if (n) { n.focus(); } // resta sotto il dito mentre si trascina
+    };
   }
 
   function renderItinerario() {

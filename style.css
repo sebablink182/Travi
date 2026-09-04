@@ -649,3 +649,22 @@
     background: var(--surface-2); font-size:13px; line-height:1.45;
   }
   .stato-g .consiglio b{ font-weight:600; }
+
+  /* comando per guardare una giornata a un orario diverso da adesso */
+  .prova-apri{
+    display:block; width:calc(100% - 32px); margin:12px 16px 0; padding:11px;
+    border:1px dashed var(--border); background:transparent; border-radius:var(--r-md);
+    color:var(--text-muted); font:var(--t-footnote); font-weight:600;
+  }
+  .prova-apri.dentro{ width:100%; margin:11px 0 0; }
+  .prova-barra{
+    display:flex; align-items:center; gap:11px; margin:12px 16px 0;
+    padding:9px 12px; background:var(--surface-2); border-radius:var(--r-md);
+  }
+  .prova-barra b{ flex:none; width:52px; font-variant-numeric:tabular-nums; font-weight:700; }
+  .prova-barra input{ flex:1; accent-color: var(--accent); }
+  .prova-barra button{
+    flex:none; border:none; background:transparent; color:var(--text-muted);
+    font-size:15px; padding:2px 4px;
+  }
+  .prova-barra + .stato-g{ margin-top:8px; }
