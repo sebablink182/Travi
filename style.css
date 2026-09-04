@@ -289,23 +289,23 @@
     backdrop-filter: var(--vetro-filtro);
     -webkit-backdrop-filter: var(--vetro-filtro);
   }
-  .weather-pill{
-    position:absolute; z-index:3; top: calc(env(safe-area-inset-top) + 62px); left:16px;
-    display:flex; align-items:center; gap:8px;
-    /* Variante CHIARA del vetro (blocco VETRO in :root): qui il vetro sta
-       sempre sopra la foto, quindi un elemento chiaro con testo scuro è voluto
-       — è l'unico punto in cui la variante chiara è giustificata. Sfocatura,
-       bordo e ombra restano però quelli dello standard, così è riconoscibile
-       come lo stesso materiale della pillola. */
+  /* Meteo: prima era una pillola piccola, poco leggibile — ingrandita su
+     richiesta (4/09) in una vera card, stesso vetro chiaro standard ma più
+     spazio per temperatura e condizione, icona più grande e riconoscibile. */
+  .weather-card{
+    position:absolute; z-index:3; top: calc(env(safe-area-inset-top) + 58px); left:16px;
+    display:flex; align-items:center; gap:12px;
     background: var(--vetro-chiaro-bg);
     backdrop-filter: var(--vetro-filtro);
     -webkit-backdrop-filter: var(--vetro-filtro);
     border: var(--vetro-bordo);
-    border-radius: var(--r-pill); padding:7px 14px 7px 8px;
+    box-shadow: var(--vetro-ombra);
+    border-radius: var(--r-lg); padding:12px 18px 12px 12px;
   }
-  .weather-pill .sun{ width:24px; height:24px; }
-  .weather-pill .t{ font-family:var(--font-display); font-size:1rem; font-weight:600; color: var(--vetro-chiaro-testo); }
-  .weather-pill .cap{ font-size:.63rem; color:#8A5A42; display:block; line-height:1.1; }
+  .weather-card .w-icon{ width:36px; height:36px; flex:none; }
+  .weather-card .w-body{ display:flex; flex-direction:column; }
+  .weather-card .t{ font-family:var(--font-display); font-size:1.5rem; font-weight:600; line-height:1.05; color: var(--vetro-chiaro-testo); }
+  .weather-card .cap{ font-size:.72rem; color:#8A5A42; margin-top:2px; }
 
   .hero-botfade{
     position:absolute; z-index:1; left:0; right:0; bottom:0; height:58%;
@@ -360,15 +360,62 @@
 
   .home-section{ margin: 22px 16px 0; }
   .home-section h2{ font-size:1rem; margin:0 0 10px; }
-  .progress-row{
+
+  /* "Oggi in itinerario": un anello di avanzamento invece della semplice
+     barra piatta di prima — più leggibile a colpo d'occhio, meno "banale". */
+  .progress-card{
     background:var(--surface); border:1px solid var(--border); border-radius: var(--r-lg);
-    padding:16px; box-shadow: var(--shadow-1);
+    padding:16px; box-shadow: var(--shadow-1); display:flex; align-items:center; gap:16px;
   }
-  .progress-row .top{ display:flex; justify-content:space-between; align-items:baseline; }
-  .progress-row .top .n{ font-family:var(--font-display); font-size:1.3rem; }
-  .progress-row .top .n small{ font-family:var(--font-ui); font-size:.78rem; color:var(--text-muted); font-weight:500; }
-  .bar{ height:7px; border-radius:99px; background:var(--surface-2); margin-top:10px; overflow:hidden; }
-  .bar > span{ display:block; height:100%; background: linear-gradient(90deg, var(--accent), var(--amber)); border-radius:99px; }
+  .ring-wrap{ position:relative; width:64px; height:64px; flex:none; }
+  .ring{ width:64px; height:64px; transform:rotate(-90deg); }
+  .ring-bg{ fill:none; stroke:var(--surface-2); stroke-width:9; }
+  .ring-fg{
+    fill:none; stroke:var(--accent); stroke-width:9; stroke-linecap:round;
+    stroke-dasharray:263.9; stroke-dashoffset:263.9; transition: stroke-dashoffset .5s ease;
+  }
+  .ring-pct{ position:absolute; inset:0; display:flex; align-items:center; justify-content:center; font-family:var(--font-display); font-size:.95rem; font-weight:600; }
+  .progress-text{ flex:1; min-width:0; }
+  .progress-text .n{ font-family:var(--font-display); font-size:1.2rem; }
+  .progress-text .n small{ font-family:var(--font-ui); font-size:.76rem; color:var(--text-muted); font-weight:500; }
+  .progress-sub{ font-size:.78rem; color:var(--text-muted); margin-top:3px; }
+
+  /* "Il viaggio in breve": ogni numero ha ora un'icona in un badge colorato,
+     invece di tre numeri nudi affiancati. */
+  .stat-row{
+    display:flex; justify-content:space-around; text-align:center;
+    background:var(--surface); border:1px solid var(--border); border-radius: var(--r-lg);
+    padding:18px 8px; box-shadow: var(--shadow-1);
+  }
+  .stat{ display:flex; flex-direction:column; align-items:center; gap:6px; }
+  .stat-ico{
+    width:34px; height:34px; border-radius:50%; display:flex; align-items:center; justify-content:center; color:#fff;
+  }
+  .stat-ico svg{ width:16px; height:16px; }
+  .stat-ico.ico-a{ background: linear-gradient(155deg, var(--fogblue), var(--indigo)); }
+  .stat-ico.ico-b{ background: linear-gradient(155deg, var(--sakura), var(--accent)); }
+  .stat-ico.ico-c{ background: linear-gradient(155deg, var(--amber), var(--accent-2)); }
+  .stat-n{ font-family:var(--font-display); font-size:1.25rem; }
+  .stat-l{ font-size:.7rem; color:var(--text-muted); }
+
+  /* Budget extra: stesso linguaggio del next-card della Home (glifo + info +
+     freccia), invece del box generico di prima. */
+  .budget-card{
+    display:flex; align-items:center; gap:12px; cursor:pointer;
+    background:var(--surface); border:1px solid var(--border); border-radius: var(--r-lg);
+    padding:14px 16px; box-shadow: var(--shadow-1);
+  }
+  .budget-ico{
+    width:44px; height:44px; border-radius:14px; flex:none; color:#fff;
+    background: linear-gradient(155deg, var(--good), #2E8B57);
+    display:flex; align-items:center; justify-content:center;
+  }
+  .budget-ico svg{ width:19px; height:19px; }
+  .budget-info{ flex:1; min-width:0; }
+  .budget-info .n{ font-family:var(--font-display); font-size:1.2rem; }
+  .budget-info .budget-sub{ font-size:.78rem; color:var(--text-muted); margin-top:1px; }
+  .budget-card .chev{ color:var(--text-faint); flex:none; }
+
   .banner{
     margin: 16px 16px 0; background: var(--surface-2); border:1px dashed var(--border);
     border-radius: var(--r-md); padding: 12px 14px; font-size:.8rem; color:var(--text-muted);
@@ -392,28 +439,43 @@
   .city-heading span{ font-size:.78rem; color:var(--text-muted); }
 
   /* ---------- itinerary list ---------- */
+  /* Ridisegnata il 4/09: foto più grande e protagonista, orario spostato
+     sopra il titolo invece che isolato a sinistra, badge di priorità sulla
+     foto per le tappe imperdibili, e un tasto "fatto" grande e diretto sulla
+     destra — si segna una tappa come completata con un tocco, senza aprire
+     il foglio di modifica. */
   .stoplist{ padding: 12px 16px 0; display:flex; flex-direction:column; gap:10px; }
   .stopcard{
     display:flex; gap:12px; background:var(--surface); border:1px solid var(--border);
-    border-radius: var(--r-lg); padding:12px; cursor:pointer; align-items:flex-start;
+    border-radius: var(--r-lg); padding:12px; cursor:pointer; align-items:center;
     box-shadow: var(--shadow-1);
   }
   .stopcard.done{ opacity:.6; }
-  .stopcard .time{ flex:none; width:40px; padding-top:4px; font-size:.8rem; font-weight:600; color:var(--text); }
   .stopcard .thumb{
-    flex:none; width:54px; height:54px; border-radius:15px; background-size:cover; background-position:center;
+    flex:none; width:66px; height:66px; border-radius:17px; background-size:cover; background-position:center;
     position:relative; box-shadow: inset 0 0 0 1px rgba(20,15,10,.08);
   }
   .stopcard.done .thumb{ filter:saturate(.55) brightness(.94); }
-  .stopcard .thumb .dot{
-    position:absolute; right:-3px; bottom:-3px; width:15px; height:15px; border-radius:50%;
-    background: var(--accent); border:2.5px solid var(--surface);
+  .stopcard .prio-badge{
+    position:absolute; left:-5px; top:-5px; width:22px; height:22px; border-radius:50%;
+    background: var(--accent); color:#fff; display:flex; align-items:center; justify-content:center;
+    box-shadow: 0 2px 6px rgba(20,14,10,.3);
   }
-  .stopcard.done .thumb .dot{ background: var(--good); }
+  .stopcard .prio-badge svg{ width:11px; height:11px; }
   .stopcard .content{ flex:1; min-width:0; }
-  .stopcard .title{ font-family:var(--font-display); font-size:1.02rem; font-weight:600; }
+  .stopcard .meta-top{ display:flex; align-items:center; gap:6px; }
+  .stopcard .meta-top .time{ font-size:.76rem; font-weight:700; color:var(--accent); letter-spacing:.02em; }
+  .stopcard .meta-top .lockdot{ font-size:.7rem; }
+  .stopcard .title{ font-family:var(--font-display); font-size:1.02rem; font-weight:600; margin-top:1px; }
   .stopcard .sub{ font-size:.78rem; color:var(--text-muted); margin-top:1px; }
   .stopcard .tags{ display:flex; gap:6px; margin-top:8px; flex-wrap:wrap; }
+  .quickdone{
+    flex:none; width:38px; height:38px; border-radius:50%; border:1.5px solid var(--border);
+    background:var(--surface-2); color:var(--text-faint); display:flex; align-items:center; justify-content:center;
+    cursor:pointer;
+  }
+  .quickdone svg{ width:17px; height:17px; }
+  .quickdone.on{ background: var(--good); border-color:var(--good); color:#fff; }
   .chip{
     display:inline-flex; align-items:center; gap:4px; font-size:.72rem; color:var(--text-muted);
     background:var(--surface-2); border:1px solid var(--border); border-radius:var(--r-pill); padding:3px 9px 3px 7px;
@@ -430,20 +492,15 @@
     font-weight:600; cursor:pointer; border:none;
   }
 
-  /* ---------- map view ---------- */
-  .mapwrap{
-    margin: 14px 16px 0; border-radius: var(--r-xl); overflow:hidden; border:1px solid var(--border);
-    background:
-      radial-gradient(140% 100% at 100% 0%, rgba(178,84,47,.10), transparent 60%),
-      var(--surface);
-    box-shadow: var(--shadow-1);
-  }
-  .mapwrap svg{ width:100%; display:block; }
-  /* La mappa vera (Leaflet). L'altezza va data qui: Leaflet non ne ha una sua
-     e senza questa riga il contenitore resta alto zero e la mappa non si vede. */
-  #map{ height:280px; width:100%; }
+  /* ---------- map view ----------
+     Ridisegnata il 4/09: schermo intero invece di una mappa piccola incassata
+     con una lista sotto. Itinerario resta l'unica fonte di verità su "che
+     giorno stiamo guardando" — qui non c'è più nessun selettore di giorno
+     proprio, solo una pillola che RIPORTA il giorno scelto in Itinerario. */
+  .mapfull{ position:relative; flex:1; min-height:0; }
+  #map{ position:absolute; inset:0; }
   .leaflet-container{ background: var(--surface-2); font-family: var(--font-ui); }
-  /* i comandi di zoom di Leaflet, riportati nello stile dell'app */
+  .leaflet-control-zoom{ margin-top: calc(env(safe-area-inset-top) + 64px) !important; }
   .leaflet-control-zoom a{
     border-radius:0 !important; color:var(--text) !important; border-color:var(--border) !important;
   }
@@ -454,23 +511,46 @@
     font: 700 12px/1 var(--font-ui); border:2px solid #fff;
     box-shadow: 0 2px 6px rgba(20,14,10,.35);
   }
-  .maplist{ padding: 4px 16px 0; display:flex; flex-direction:column; gap:10px; margin-top:6px; }
-  .mapstop{
-    background:var(--surface); border:1px solid var(--border); border-radius:var(--r-lg); padding:12px;
-    box-shadow: var(--shadow-1);
+  .pin-num.sel{ background:var(--text); width:32px; height:32px; font-size:14px; box-shadow: 0 3px 10px rgba(20,14,10,.45); }
+
+  .map-topbar{
+    position:absolute; z-index:3; left:0; right:0; top:0;
+    display:flex; justify-content:center; padding: calc(env(safe-area-inset-top) + 12px) 16px 0;
+    pointer-events:none;
   }
-  .mapstop .top{ display:flex; gap:10px; align-items:center; }
-  .thumb.small{
-    flex:none; width:46px; height:46px; border-radius:13px; background-size:cover; background-position:center;
-    position:relative; box-shadow: inset 0 0 0 1px rgba(20,15,10,.08);
+  .map-daypill{
+    pointer-events:auto; cursor:pointer;
+    background: var(--vetro-bg); backdrop-filter: var(--vetro-filtro); -webkit-backdrop-filter: var(--vetro-filtro);
+    border: var(--vetro-bordo); box-shadow: var(--vetro-ombra); color: var(--vetro-testo);
+    border-radius: var(--r-pill); padding:8px 18px; font-size:.82rem; font-weight:600;
   }
-  .mapstop .badge{
-    position:absolute; right:-4px; bottom:-4px; width:20px; height:20px; border-radius:50%; background:var(--accent); color:#fff;
-    display:flex; align-items:center; justify-content:center; font-size:.63rem; font-weight:700; border:2px solid var(--surface);
+
+  .map-card{
+    position:absolute; z-index:3; left:14px; right:14px; bottom: calc(96px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; gap:6px;
+    background: var(--surface); border-radius: var(--r-xl); box-shadow: var(--shadow-2);
+    border:1px solid var(--border); padding:10px;
   }
-  .mapstop .title{ font-weight:600; font-size:.92rem; }
-  .mapstop .sub{ font-size:.74rem; color:var(--text-muted); }
-  .mapstop .links{ display:flex; gap:8px; margin-top:10px; }
+  .map-nav{
+    flex:none; width:32px; height:32px; border-radius:50%; border:none; background:var(--surface-2);
+    color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer;
+  }
+  .map-nav svg{ width:14px; height:14px; }
+  .map-nav.prev svg{ transform:scaleX(-1); }
+  .map-card-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
+  .map-card-body .top{ display:flex; gap:10px; align-items:center; }
+  .map-card-body .thumb{
+    flex:none; width:50px; height:50px; border-radius:13px; background-size:cover; background-position:center;
+    box-shadow: inset 0 0 0 1px rgba(20,15,10,.08);
+  }
+  .map-card-body .info{ flex:1; min-width:0; }
+  .map-card-body .title{ font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .map-card-body .sub{ font-size:.74rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .map-card-body .empty{ font-size:.82rem; color:var(--text-muted); padding:8px 4px; text-align:center; }
+  .map-details{
+    border:none; border-radius:var(--r-pill); background:var(--accent); color:#fff; font-weight:600;
+    font-size:.82rem; padding:9px; width:100%; cursor:pointer;
+  }
   .linkbtn{
     flex:1; text-align:center; font-size:.76rem; padding:8px 6px; border-radius:var(--r-md);
     border:1px solid var(--border); color:var(--text); text-decoration:none; background:var(--surface-2);
@@ -513,11 +593,13 @@
   .tab{
     border:none; background:transparent; color: var(--vetro-testo);
     display:flex; flex-direction:column; align-items:center;
-    gap:3px; padding:9px 20px; border-radius: var(--r-pill); cursor:pointer; font-size:.64rem; font-weight:600;
-    /* Le icone seguono da sole: sono disegnate con stroke="currentColor". */
+    gap:3px; padding:9px 14px; border-radius: var(--r-pill); cursor:pointer; font-size:.6rem; font-weight:600;
+    /* Le icone seguono da sole: sono disegnate con stroke="currentColor".
+       Padding ridotto il 4/09 (era 20px) per fare posto al quarto tab
+       (Preferiti) nella stessa pillola. */
   }
   .tab .ico{ display:flex; }
-  .tab svg{ width:20px; height:20px; }
+  .tab svg{ width:19px; height:19px; }
   .tab.active{ background: var(--accent); color:#fff; }
 
   /* ---------- floating add ---------- */
@@ -576,7 +658,42 @@
   .btn.primary{ background:var(--accent); color:#fff; }
   .btn.ghost{ background:var(--surface-2); color:var(--text); border:1px solid var(--border); }
   .btn.danger{ background:transparent; color:#B4503C; }
-  .donetoggle{ display:flex; align-items:center; justify-content:space-between; margin-top:16px; padding:12px 14px; background:var(--surface-2); border-radius:var(--r-md); }
+
+  /* Tasto "segna come completata": prima in fondo al foglio come un
+     interruttore fra tanti, ora subito sotto l'intestazione, grande e
+     diretto — è l'azione richiesta più spesso durante il viaggio vero. */
+  .done-big{
+    display:flex; align-items:center; justify-content:center; gap:9px; width:100%;
+    margin-top:10px; padding:14px; border-radius:var(--r-lg); border:1.5px solid var(--border);
+    background:var(--surface-2); color:var(--text); font-size:.95rem; font-weight:600; cursor:pointer;
+  }
+  .done-big svg{ width:19px; height:19px; }
+  .done-big.on{ background: var(--good); border-color:var(--good); color:#fff; }
+
+  .quicklinks{ display:flex; gap:8px; margin-top:12px; }
+
+  /* Ricerca del posto nel foglio: risultati Nominatim in un piccolo elenco a
+     tendina sotto il campo. */
+  .cerca-risultati{
+    margin-top:6px; border:1px solid var(--border); border-radius:var(--r-md); overflow:hidden;
+    max-height:220px; overflow-y:auto;
+  }
+  .cerca-riga{ padding:10px 12px; border-bottom:1px solid var(--border); cursor:pointer; }
+  .cerca-riga:last-child{ border-bottom:none; }
+  .cerca-riga:active{ background:var(--surface-2); }
+  .cerca-riga .t{ font-size:.88rem; font-weight:600; }
+  .cerca-riga .s{ font-size:.74rem; color:var(--text-muted); margin-top:1px; }
+
+  /* Sezione "Altri dettagli": raccoglie i campi meno urgenti (categoria,
+     trasporto, note) dietro un tasto, per accorciare il foglio in apertura. */
+  .altro-toggle{
+    display:flex; align-items:center; justify-content:center; gap:6px; width:100%;
+    margin-top:16px; padding:10px; border:none; background:transparent; color:var(--text-muted);
+    font-size:.82rem; font-weight:600; cursor:pointer;
+  }
+  .altro-toggle svg{ width:13px; height:13px; transition: transform .2s ease; }
+  .altro-toggle.open svg{ transform:rotate(90deg); }
+  .altro-body{ padding-top:2px; }
 
   /* ---------- budget ---------- */
   .budget-total{ font-family:var(--font-display); font-size:2rem; text-align:center; padding:10px 0 16px; }
@@ -680,4 +797,49 @@
     display:block; width:100%; margin-top:9px; padding:9px;
     border:none; border-radius:var(--r-sm); background:var(--accent); color:#fff;
     font: var(--t-footnote); font-weight:700; font-family:var(--font-ui);
+  }
+
+  /* ---------- Preferiti ---------- */
+  .fav-groups{ padding: 8px 16px 24px; }
+  .fav-city-heading{
+    font-family:var(--font-display); font-weight:600; font-size:.92rem; color:var(--text-muted);
+    text-transform:uppercase; letter-spacing:.05em; margin: 18px 2px 8px;
+  }
+  .fav-city-heading:first-child{ margin-top:6px; }
+  .fav-card{
+    display:flex; gap:12px; align-items:center; background:var(--surface); border:1px solid var(--border);
+    border-radius: var(--r-lg); padding:12px; box-shadow: var(--shadow-1); margin-bottom:10px;
+  }
+  .fav-card .thumb{
+    flex:none; width:58px; height:58px; border-radius:16px; background-size:cover; background-position:center;
+    box-shadow: inset 0 0 0 1px rgba(20,15,10,.08);
+  }
+  .fav-card .content{ flex:1; min-width:0; }
+  .fav-card .title{ font-family:var(--font-display); font-size:.98rem; font-weight:600; }
+  .fav-card .sub{ font-size:.76rem; color:var(--text-muted); margin-top:1px; }
+  .fav-card .fav-notes{ font-size:.76rem; color:var(--text-muted); margin-top:4px; font-style:italic; }
+  .fav-actions{ flex:none; display:flex; flex-direction:column; align-items:stretch; gap:6px; }
+  .fav-plan{
+    border:none; border-radius:var(--r-pill); background:var(--accent); color:#fff; font-weight:600;
+    font-size:.76rem; padding:7px 12px; cursor:pointer; white-space:nowrap;
+  }
+  .fav-del{ border:none; background:transparent; color:var(--text-faint); font-size:.9rem; cursor:pointer; }
+
+  /* Pianificare un preferito: opzioni consigliate dal motore (già verificate)
+     più un'opzione manuale di riserva. */
+  .assign-fav-title{ font-family:var(--font-display); font-size:1.1rem; font-weight:600; margin-bottom:2px; }
+  .assign-fav-sub{ font-size:.8rem; color:var(--text-muted); margin-bottom:14px; }
+  .assign-lead{ font-size:.82rem; color:var(--text-muted); margin:0 0 10px; }
+  .assign-opt{
+    display:block; width:100%; text-align:left; background:var(--surface-2); border:1px solid var(--border);
+    border-radius:var(--r-md); padding:12px 14px; margin-bottom:8px; cursor:pointer;
+  }
+  .assign-opt .d{ font-weight:600; font-size:.92rem; }
+  .assign-opt .c{ font-size:.76rem; color:var(--text-muted); }
+  .assign-opt .fine{ font-size:.76rem; color:var(--good); margin-top:3px; font-weight:600; }
+  .assign-manuale{ margin-top:16px; padding-top:14px; border-top:1px solid var(--border); }
+  .assign-manuale label{ font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); display:block; margin-bottom:6px; }
+  .assign-manuale input[type=time]{
+    width:100%; border:1px solid var(--border); background:var(--surface-2); border-radius:var(--r-md);
+    padding:11px 12px; font-family:inherit; font-size:.92rem; color:var(--text); margin-bottom:12px;
   }

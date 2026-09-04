@@ -67,14 +67,35 @@ superficie piatta.
 
 ---
 
-## NON ANCORA COSTRUITO (non è uno scostamento)
+## ADOTTATO — quattro tab, Itinerario fonte di verità per la Mappa (4 settembre 2026)
 
-L'architettura originale prevede nove sezioni — Home, Itinerario, Mappa, Esplora,
-Prenotazioni, Preferiti, Budget, Diario, Altro — e cinque voci nella barra di
-navigazione. L'app oggi ne ha tre: Home, Itinerario, Mappa.
+Tre cambi grossi in un colpo solo, tutti richiesti insieme il 4/09:
 
-Questo è semplicemente lavoro da fare, non una decisione contraria. Il documento
-di architettura resta valido come piano.
+- **Preferiti** è un tab vero adesso (quarto, dopo Mappa): lista dei desideri
+  non ancora programmati, raggruppata per città. "Pianifica" su un preferito
+  riusa `Giornata.giorniAlternativi` (lo stesso motore usato per spostare una
+  tappa da un giorno all'altro in Itinerario) per proporre solo i giorni dove
+  c'è VERAMENTE spazio — non un elenco a caso — con un'opzione manuale sempre
+  disponibile per chi vuole decidere comunque diversamente.
+- **Mappa non ha più un suo selettore di giorno.** Itinerario è l'unica fonte
+  di verità su "che giorno stiamo guardando": la Mappa (ora a schermo intero,
+  non più una mappa piccola con una lista sotto) mostra sempre lo stesso
+  giorno scelto in Itinerario, con una pillola in alto che lo RIPORTA (e ci
+  riporta in Itinerario se la si tocca) invece di sceglierlo.
+- **Foto reali per le tappe aggiunte a mano.** Le 52 tappe originali restano
+  con le foto scelte a mano (`s.img`). Una tappa custom o un preferito, in
+  automatico al salvataggio, cerca una foto libera su Wikipedia (prima
+  italiana, poi inglese — `js/foto.js`, nessuna chiave, nessun costo) e la
+  salva come `s.foto`; se non si trova niente resta il segnaposto generico
+  (`assets/img/luogo-generico.jpg`), mai un riquadro vuoto. La ricerca del
+  posto nel foglio (`js/cerca-luogo.js`, stesso Nominatim già usato da
+  coordinate.html/hotel.html) riempie titolo, zona e posizione da un
+  risultato scelto, per non dover più scrivere a mano dati che non si
+  conoscono in anticipo.
+
+Restano da costruire, invariato dal 3/09: Esplora, Prenotazioni, Budget come
+sezione propria, Diario, e il tab "Altro" che li raccoglierebbe — il
+documento di architettura originale resta valido come piano per quelli.
 
 ---
 

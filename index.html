@@ -72,6 +72,12 @@
   <symbol id="ic-pin" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M12 21s7-6.4 7-12A7 7 0 0 0 5 9c0 5.6 7 12 7 12Z"/><circle cx="12" cy="9" r="2.4"/></symbol>
   <symbol id="ic-refresh" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M4 10a8 8 0 0 1 14-4.9M20 14a8 8 0 0 1-14 4.9"/><path d="M17.5 3.5 18 8l-4.4-.7M6.5 20.5 6 16l4.4.7"/></symbol>
   <symbol id="ic-trash" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V5a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2M6.5 7l1 13h9l1-13"/></symbol>
+  <symbol id="ic-heart" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 20s-7.2-4.5-9.7-9.2A5 5 0 0 1 12 6a5 5 0 0 1 9.7 4.8C19.2 15.5 12 20 12 20Z"/></symbol>
+  <symbol id="ic-check" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12.5 9 18l11-12"/></symbol>
+  <symbol id="ic-cloud" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 17.5a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.6.6A3.6 3.6 0 0 1 17 17.5H6.5Z"/></symbol>
+  <symbol id="ic-rain" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 14.5a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.6.6A3.6 3.6 0 0 1 17 14.5H6.5Z"/><path d="M9 17.5 8 20M13 17.5 12 20M17 17.5 16 20"/></symbol>
+  <symbol id="ic-snow" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M6.5 14.5a4 4 0 0 1 .3-8 5.5 5.5 0 0 1 10.6.6A3.6 3.6 0 0 1 17 14.5H6.5Z"/><path d="M9 18v3M7.5 19.5h3M14 18v3M12.5 19.5h3"/></symbol>
+  <symbol id="ic-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6.5" width="18" height="12" rx="2.5"/><path d="M3 10.5h18"/><circle cx="16.5" cy="14.5" r="1.1" fill="currentColor" stroke="none"/></symbol>
 </svg>
 </svg>
 
@@ -88,9 +94,12 @@
             <div class="brand"><svg><use href="#ic-torii"/></svg><span>Travi</span></div>
             <div class="icon-btn glass"><svg><use href="#ic-search"/></svg></div>
           </div>
-          <div class="weather-pill">
-            <svg class="sun" viewBox="0 0 24 24" fill="none" stroke="#C1652F" stroke-width="1.5"><use href="#ic-sun"/></svg>
-            <div><span class="t">18–23°</span><span class="cap">clima tipico · maggio</span></div>
+          <div class="weather-card" id="weather-card">
+            <svg class="w-icon" id="weather-icon" viewBox="0 0 24 24" fill="none" stroke="#C1652F" stroke-width="1.5"><use href="#ic-sun"/></svg>
+            <div class="w-body">
+              <span class="t" id="weather-t">18–23°</span>
+              <span class="cap" id="weather-cond">Clima tipico di maggio</span>
+            </div>
           </div>
           <div class="hero-botfade"></div>
           <div class="hero-scrim">
@@ -116,32 +125,39 @@
 
         <div class="home-section">
           <h2>Oggi in itinerario</h2>
-          <div class="progress-row">
-            <div class="top">
-              <div class="n num" id="home-count">0 <small>luoghi</small></div>
-              <div class="n num" id="home-pct" style="color:var(--text-muted); font-size:.8rem;">0%</div>
+          <div class="progress-card">
+            <div class="ring-wrap">
+              <svg class="ring" viewBox="0 0 100 100">
+                <circle class="ring-bg" cx="50" cy="50" r="42"/>
+                <circle class="ring-fg" id="ring-fg" cx="50" cy="50" r="42"/>
+              </svg>
+              <div class="ring-pct num" id="home-pct">0%</div>
             </div>
-            <div class="bar"><span id="home-bar" style="width:0%"></span></div>
+            <div class="progress-text">
+              <div class="n num" id="home-count">0 <small>luoghi in programma</small></div>
+              <div class="progress-sub" id="home-done-lbl">Nessuna tappa completata ancora</div>
+            </div>
           </div>
         </div>
 
         <div class="home-section">
           <h2>Il viaggio in breve</h2>
-          <div class="progress-row" style="display:flex; justify-content:space-around; text-align:center; padding:18px 8px;">
-            <div><div class="display" style="font-size:1.4rem;">14</div><div style="font-size:.7rem;color:var(--text-muted)">giorni</div></div>
-            <div><div class="display" style="font-size:1.4rem;">6</div><div style="font-size:.7rem;color:var(--text-muted)">città</div></div>
-            <div><div class="display" style="font-size:1.4rem;" id="home-stops-total">–</div><div style="font-size:.7rem;color:var(--text-muted)">tappe</div></div>
+          <div class="stat-row">
+            <div class="stat"><div class="stat-ico ico-a"><svg><use href="#ic-list"/></svg></div><div class="stat-n num">14</div><div class="stat-l">giorni</div></div>
+            <div class="stat"><div class="stat-ico ico-b"><svg><use href="#ic-pin"/></svg></div><div class="stat-n num">6</div><div class="stat-l">città</div></div>
+            <div class="stat"><div class="stat-ico ico-c"><svg><use href="#ic-star"/></svg></div><div class="stat-n num" id="home-stops-total">–</div><div class="stat-l">tappe</div></div>
           </div>
         </div>
 
         <div class="home-section" style="margin-bottom:24px;">
           <h2>Budget extra</h2>
-          <div class="progress-row" id="budget-summary-card" style="cursor:pointer;">
-            <div class="top">
+          <div class="budget-card" id="budget-summary-card">
+            <div class="budget-ico"><svg><use href="#ic-wallet"/></svg></div>
+            <div class="budget-info">
               <div class="n num" id="budget-total-home">€0</div>
-              <div class="n num" style="color:var(--text-muted); font-size:.8rem;" id="budget-count-home">0 spese</div>
+              <div class="budget-sub" id="budget-count-home">0 spese</div>
             </div>
-            <div style="font-size:.76rem; color:var(--text-muted); margin-top:8px;">Spese extra non incluse nel preventivo — tocca per gestirle</div>
+            <svg class="chev" width="18" height="18"><use href="#ic-chev"/></svg>
           </div>
         </div>
 
@@ -165,16 +181,33 @@
       </div>
     </div>
 
-    <!-- MAPPA -->
+    <!-- MAPPA: schermo intero, il giorno mostrato è sempre quello scelto in
+         Itinerario (nessun selettore proprio — Itinerario è l'unica fonte
+         di verità su "che giorno stiamo guardando"). -->
     <div class="view" id="view-mappa">
+      <div class="mapfull">
+        <div id="map"></div>
+        <div class="map-topbar">
+          <div class="map-daypill" id="map-daypill">–</div>
+        </div>
+        <div class="map-card" id="map-card">
+          <button class="map-nav prev" id="map-prev" aria-label="Tappa precedente"><svg><use href="#ic-chev"/></svg></button>
+          <div class="map-card-body" id="map-card-body"></div>
+          <button class="map-nav next" id="map-next" aria-label="Tappa successiva"><svg><use href="#ic-chev"/></svg></button>
+        </div>
+      </div>
+    </div>
+
+    <!-- PREFERITI: lista dei desideri non ancora programmati, raggruppati
+         per città. Da qui si "pianifica" un posto su un giorno preciso,
+         verificato dallo stesso motore dell'Itinerario. -->
+    <div class="view" id="view-preferiti">
       <div class="scroll">
         <div class="topbar">
-          <span class="display" style="font-size:1.25rem;">Mappa</span>
-          <div class="icon-btn"><svg><use href="#ic-search"/></svg></div>
+          <span class="display" style="font-size:1.25rem;">Preferiti</span>
+          <div class="icon-btn" id="btn-add-fav"><svg><use href="#ic-plus"/></svg></div>
         </div>
-        <div class="dayrow" id="dayrow-map"></div>
-        <div class="mapwrap"><div id="map"></div></div>
-        <div class="maplist" id="maplist" style="margin-bottom:20px;"></div>
+        <div class="fav-groups" id="fav-groups"></div>
       </div>
     </div>
 
@@ -183,6 +216,7 @@
         <button class="tab active" data-view="home"><svg><use href="#ic-home"/></svg>Home</button>
         <button class="tab" data-view="itinerario"><svg><use href="#ic-list"/></svg>Itinerario</button>
         <button class="tab" data-view="mappa"><svg><use href="#ic-map"/></svg>Mappa</button>
+        <button class="tab" data-view="preferiti"><svg><use href="#ic-heart"/></svg>Preferiti</button>
       </div>
     </div>
 
@@ -199,25 +233,74 @@
   </div>
   <div class="sheet-body">
     <div class="lock-note" id="lock-note" hidden>🔒 Confermato dall'agenzia — bloccato in questa fase per evitare modifiche accidentali. Se cambia data/orario, parlatene insieme e sbloccatelo da qui in futuro.</div>
+
+    <!-- L'azione più importante prima di tutto, senza dover scorrere: -->
+    <button class="done-big" id="f-done" type="button"><svg><use href="#ic-check"/></svg><span>Segna come completata</span></button>
+
+    <div class="quicklinks" id="quicklinks" hidden>
+      <a class="linkbtn" id="link-gmaps" target="_blank" rel="noopener" href="#"><svg><use href="#ic-pin"/></svg>Google Maps</a>
+      <a class="linkbtn" id="link-amaps" target="_blank" rel="noopener" href="#"><svg><use href="#ic-pin"/></svg>Apple Maps</a>
+    </div>
+
+    <div class="field">
+      <label>Cerca il posto</label>
+      <input type="text" id="f-cerca" placeholder="Cercate il nome: titolo, zona e posizione arrivano da lì" autocomplete="off">
+      <div class="cerca-risultati" id="cerca-risultati" hidden></div>
+    </div>
     <div class="field"><label>Titolo</label><input type="text" id="f-title" placeholder="Es. Fushimi Inari Taisha"></div>
     <div class="field"><label>Zona / città</label><input type="text" id="f-sub" placeholder="Es. Fushimi, Kyoto"></div>
-    <div class="field"><label>Categoria</label><div class="pickrow" id="f-category"></div></div>
-    <div class="field"><label>Quanto ci tenete</label><div class="pickrow" id="f-priorita"></div>
-      <div class="aiuto">Decide cosa Travi è disposto a sacrificare quando la giornata non ci sta.
-        Le <b>imperdibili</b> non vengono mai proposte come rinuncia.</div></div>
+
     <div class="row2">
       <div class="field"><label>Orario</label><input type="time" id="f-time"></div>
-      <div class="field"><label>Durata (min)</label><input type="number" id="f-duration" min="0" step="5"></div>
+      <div class="field"><label>Quanto ci tenete</label><div class="pickrow" id="f-priorita"></div></div>
     </div>
-    <div class="field"><label>Trasporto verso la prossima tappa</label><div class="pickrow" id="f-transport"></div></div>
-    <div class="field"><label>Tempo di spostamento (min, stima)</label><input type="number" id="f-travel" min="0" step="1"></div>
-    <div class="field"><label>Note</label><textarea id="f-notes" placeholder="Consigli, orari di apertura, promemoria…"></textarea></div>
-    <div class="donetoggle"><span>Segna come completata</span><div class="switch" id="f-done"><div class="knob"></div></div></div>
+    <div class="aiuto">Decide cosa Travi è disposto a sacrificare quando la giornata non ci sta. Le <b>imperdibili</b> non vengono mai proposte come rinuncia.</div>
+
+    <div class="field"><label>Durata prevista</label><div class="pickrow" id="f-duration-chips"></div></div>
+
+    <button class="altro-toggle" id="altro-toggle" type="button">Altri dettagli <svg><use href="#ic-chev"/></svg></button>
+    <div class="altro-body" id="altro-body" hidden>
+      <div class="field"><label>Categoria</label><div class="pickrow" id="f-category"></div></div>
+      <div class="field"><label>Trasporto verso la prossima tappa</label><div class="pickrow" id="f-transport"></div></div>
+      <div class="field"><label>Tempo di spostamento (min, stima se vuoto)</label><input type="number" id="f-travel" min="0" step="1"></div>
+      <div class="field"><label>Note</label><textarea id="f-notes" placeholder="Consigli, orari di apertura, promemoria…"></textarea></div>
+    </div>
+
     <div class="sheet-actions">
       <button class="btn danger" id="btn-delete">Elimina</button>
       <button class="btn primary" id="btn-save">Salva</button>
     </div>
   </div>
+</div>
+<div class="sheet" id="fav-sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong style="font-family:var(--font-display); font-size:1.05rem;">Nuovo preferito</strong>
+    <button class="x" id="fav-close">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <label>Cerca il posto</label>
+      <input type="text" id="fav-cerca" placeholder="Es. Nishiki Market" autocomplete="off">
+      <div class="cerca-risultati" id="fav-cerca-risultati" hidden></div>
+    </div>
+    <div class="field"><label>Titolo</label><input type="text" id="fav-title" placeholder="Es. Nishiki Market"></div>
+    <div class="field"><label>Zona / città</label><input type="text" id="fav-sub" placeholder="Es. Nakagyo, Kyoto"></div>
+    <div class="field"><label>Categoria</label><div class="pickrow" id="fav-category"></div></div>
+    <div class="field"><label>Quanto ci tenete</label><div class="pickrow" id="fav-priorita"></div></div>
+    <div class="field"><label>Note</label><textarea id="fav-notes" placeholder="Perché lo volete vedere, cosa provare lì…"></textarea></div>
+    <div class="sheet-actions">
+      <button class="btn primary" id="fav-save" style="width:100%;">Aggiungi ai preferiti</button>
+    </div>
+  </div>
+</div>
+<div class="sheet" id="assign-sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong style="font-family:var(--font-display); font-size:1.05rem;">Quando lo vedete?</strong>
+    <button class="x" id="assign-close">✕</button>
+  </div>
+  <div class="sheet-body" id="assign-body"></div>
 </div>
 <div class="sheet" id="budget-sheet">
   <div class="sheet-grip"></div>
@@ -246,6 +329,8 @@
 <script src="js/coords.js"></script>
 <script src="js/orari.js"></script>
 <script src="js/giornata.js"></script>
+<script src="js/cerca-luogo.js"></script>
+<script src="js/foto.js"></script>
 <script type="module" src="js/app.js"></script>
 <script>
   // Effetto "foto incollata in alto" nella Home, senza usare position:sticky

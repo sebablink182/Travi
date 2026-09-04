@@ -31,6 +31,12 @@ import {
     { id: "norm",  label: "Normale",     icon: "ic-dot" },
     { id: "extra", label: "Se avanza",   icon: "ic-dash" },
   ];
+  // Durata come scelta rapida invece di un numero da digitare: raramente si
+  // sa in anticipo quanto ci si fermerà davvero da qualche parte.
+  var DURATA_OPTS = [
+    { id: "15", label: "15 min" }, { id: "30", label: "30 min" }, { id: "45", label: "45 min" },
+    { id: "60", label: "1 h" }, { id: "90", label: "1 h 30" }, { id: "120", label: "2 h+" }
+  ];
   var TRANSPORTS = [
     { id: "walk", label: "A piedi", icon: "ic-walk" },
     { id: "metro", label: "Metro/Treno", icon: "ic-train" },
@@ -50,7 +56,7 @@ import {
   var SEED_STOPS = [];
   var dataLoaded = false;
 
-  var state = { overrides: {}, custom: [], removed: [], budget: [] };
+  var state = { overrides: {}, custom: [], removed: [], budget: [], favorites: [] };
   var BUDGET_WHO = [
     { id: "sebastian", label: "Sebastian" },
     { id: "alessandra", label: "Alessandra" },
@@ -73,7 +79,18 @@ import {
     }
     return "Tokyo";
   }
-  var selectedDay = { itinerario: null, mappa: null };
+  // Stessa idea di cityKeyFor, ma per raggruppare i Preferiti: qui un posto
+  // che non nomina nessuna delle città del viaggio deve finire in "Altro",
+  // non silenziosamente sotto Tokyo (che è il fallback giusto per il meteo,
+  // ma sbagliato per un raggruppamento).
+  function cityKeyForFav(text) {
+    var keys = Object.keys(CITY_COORDS);
+    for (var i = 0; i < keys.length; i++) {
+      if (text && text.indexOf(keys[i]) !== -1) return keys[i];
+    }
+    return "Altro";
+  }
+  var selectedDay = { itinerario: null };
   var editingId = null;
   var unsubState = null;
 
@@ -152,7 +169,6 @@ import {
       }
       dataLoaded = true;
       selectedDay.itinerario = defaultDay();
-      selectedDay.mappa = defaultDay();
       loadLocalFallback();
       subscribeState();
       renderAll();
@@ -186,6 +202,7 @@ import {
           state.custom = data.custom || [];
           state.removed = data.removed || [];
           state.budget = data.budget || [];
+          state.favorites = data.favorites || [];
           renderAll();
         }
       },
@@ -202,13 +219,14 @@ import {
         state.custom = parsed.custom || [];
         state.removed = parsed.removed || [];
         state.budget = parsed.budget || [];
+        state.favorites = parsed.favorites || [];
       }
     } catch (e) {}
   }
 
   function persist() {
     renderAll();
-    var payload = { overrides: state.overrides, custom: state.custom, removed: state.removed, budget: state.budget, savedAt: Date.now() };
+    var payload = { overrides: state.overrides, custom: state.custom, removed: state.removed, budget: state.budget, favorites: state.favorites, savedAt: Date.now() };
     try { localStorage.setItem("travi-state", JSON.stringify(payload)); } catch (e) {}
     setDoc(doc(db, "travi", "state"), payload).catch(function () {});
   }
@@ -263,7 +281,16 @@ import {
 
   function iconFor(c) { return '<svg><use href="#' + cat(c).icon + '"/></svg>'; }
   function tIconFor(m) { return '<svg><use href="#' + transp(m).icon + '"/></svg>'; }
-  function imgFor(s) { return (s && s.img) ? "assets/img/" + s.img + ".jpg" : ""; }
+  // Le 52 tappe originali hanno una foto vera scelta a mano (s.img). Una tappa
+  // aggiunta da voi o messa nei Preferiti non ce l'ha: s.foto è quella trovata
+  // in automatico su Wikimedia al salvataggio (vedi js/foto.js). Se anche
+  // quella manca (posto non trovato, o ricerca ancora in corso), il segnaposto
+  // generico è comunque una foto vera dell'app, non un div vuoto.
+  function imgFor(s) {
+    if (s && s.img) return "assets/img/" + s.img + ".jpg";
+    if (s && s.foto) return s.foto;
+    return "assets/img/luogo-generico.jpg";
+  }
 
   /* ---------- stato della giornata ----------
      Il pannello compare SOLO nel giorno in cui vi trovate davvero: in un giorno
@@ -449,6 +476,22 @@ import {
     };
   }
 
+  // Segna/toglie "fatto" direttamente dalla lista, senza aprire il foglio:
+  // è l'azione che serve più spesso durante il viaggio vero, quindi deve
+  // costare un tocco solo.
+  function toggleDone(id) {
+    var cur = allStops().find(function (x) { return x.id === id; });
+    if (!cur) return;
+    var novo = !cur.done;
+    var isCustom = state.custom.some(function (c) { return c.id === id; });
+    if (isCustom) {
+      state.custom = state.custom.map(function (c) { return c.id === id ? Object.assign({}, c, { done: novo }) : c; });
+    } else {
+      state.overrides[id] = Object.assign({}, state.overrides[id] || {}, { done: novo });
+    }
+    persist();
+  }
+
   function renderItinerario() {
     if (!DAYS.length || !selectedDay.itinerario) return;
     document.getElementById("itin-city").textContent = dayById(selectedDay.itinerario).city;
@@ -458,12 +501,16 @@ import {
     var el = document.getElementById("stoplist");
     el.innerHTML = "";
     list.forEach(function (s) {
+      var prio = window.Giornata ? window.Giornata.prioDi(s) : (s.prio || "norm");
       var card = document.createElement("div");
       card.className = "stopcard" + (s.done ? " done" : "");
       card.innerHTML =
-        '<div class="time num">' + s.time + "</div>" +
-        '<div class="thumb" style="background-image:url(\'' + imgFor(s) + '\')"><div class="dot"></div></div>' +
+        '<div class="thumb" style="background-image:url(\'' + imgFor(s) + '\')">' +
+        (prio === "top" ? '<span class="prio-badge"><svg><use href="#ic-star"/></svg></span>' : "") +
+        "</div>" +
         '<div class="content">' +
+        '<div class="meta-top"><span class="time num">' + s.time + "</span>" +
+        (s.locked ? '<span class="lockdot">🔒</span>' : "") + "</div>" +
         '<div class="title">' + escapeHtml(s.title) + "</div>" +
         '<div class="sub">' + escapeHtml(s.sub || "") + "</div>" +
         '<div class="tags">' +
@@ -472,8 +519,13 @@ import {
         (s.tmin ? '<span class="chip">' + tIconFor(s.tmode) + s.tmin + " min</span>" : "") +
         (s.locked ? '<span class="chip locked-chip">🔒 Confermato</span>' : "") +
         "</div>" +
-        "</div>";
+        "</div>" +
+        '<button class="quickdone' + (s.done ? " on" : "") + '" aria-label="Segna come completata"><svg><use href="#ic-check"/></svg></button>';
       card.addEventListener("click", function () { openSheet(s.id); });
+      card.querySelector(".quickdone").addEventListener("click", function (e) {
+        e.stopPropagation();
+        toggleDone(s.id);
+      });
       el.appendChild(card);
     });
     if (list.length === 0) {
@@ -481,10 +533,13 @@ import {
     }
   }
 
-  // Mappa vera (Leaflet + Stadia Alidade Smooth). Il fondo mappa è autorizzato
-  // per dominio nel pannello Stadia, quindi qui non c'è nessuna chiave: se un
-  // giorno le piastrelle sparissero, è là che va aggiunto il dominio nuovo.
-  var mappa = null, stratoTappe = null;
+  // Mappa vera (Leaflet + Stadia Alidade Smooth), a schermo intero. Il giorno
+  // mostrato è SEMPRE quello scelto in Itinerario — niente selettore proprio:
+  // Itinerario resta l'unica fonte di verità su "che giorno stiamo guardando".
+  // Il fondo mappa è autorizzato per dominio nel pannello Stadia, quindi qui
+  // non c'è nessuna chiave: se un giorno le piastrelle sparissero, è là che va
+  // aggiunto il dominio nuovo.
+  var mappa = null, stratoTappe = null, markerRefs = [], mapSelIdx = 0, mapLastDay = null;
 
   function creaMappa() {
     if (mappa || typeof L === "undefined") return mappa;
@@ -497,26 +552,45 @@ import {
     mappa.setView([35.68, 139.76], 11);
     return mappa;
   }
+
+  function iconaPin(numero, selezionata) {
+    return L.divIcon({
+      className: "", html: '<div class="pin-num' + (selezionata ? " sel" : "") + '">' + numero + "</div>",
+      iconSize: [26, 26], iconAnchor: [13, 13]
+    });
+  }
+
   function renderMappa() {
-    if (!DAYS.length || !selectedDay.mappa) return;
-    var list = stopsForDay(selectedDay.mappa);
-    var day = dayById(selectedDay.mappa);
+    if (!DAYS.length || !selectedDay.itinerario) return;
+    var dayId = selectedDay.itinerario;
+    var list = stopsForDay(dayId);
+    var day = dayById(dayId);
+
+    var pill = document.getElementById("map-daypill");
+    if (pill && day) pill.textContent = day.city + " · " + weekdayShort(day.date) + " " + dayNum(day.date);
+
+    // Quando si cambia giorno si riparte dalla prossima tappa non fatta;
+    // dentro lo stesso giorno la selezione (tappa scelta col tocco o con le
+    // frecce) resta dov'era.
+    if (dayId !== mapLastDay) {
+      mapLastDay = dayId;
+      var primoNonFatto = list.findIndex(function (s) { return !s.done; });
+      mapSelIdx = primoNonFatto === -1 ? 0 : primoNonFatto;
+    }
+    if (mapSelIdx >= list.length) mapSelIdx = Math.max(0, list.length - 1);
+
     // Pin numerati + percorso del giorno. I numeri corrispondono all'ordine
-    // delle tappe nell'elenco qui sotto, così mappa ed elenco si leggono insieme.
+    // delle tappe, così mappa e card in basso si leggono insieme.
     var m = creaMappa();
+    markerRefs = [];
     if (m) {
       stratoTappe.clearLayers();
       var punti = [];
       list.forEach(function (s, i) {
         if (s.lat == null || s.lon == null) return;
-        var icona = L.divIcon({
-          className: "", html: '<div class="pin-num">' + (i + 1) + "</div>",
-          iconSize: [26, 26], iconAnchor: [13, 13]
-        });
-        L.marker([s.lat, s.lon], { icon: icona })
-          .bindPopup("<b>" + escapeHtml(s.title) + "</b><br>" + s.time +
-                     (s.sub ? " · " + escapeHtml(s.sub) : ""))
-          .addTo(stratoTappe);
+        var mk = L.marker([s.lat, s.lon], { icon: iconaPin(i + 1, i === mapSelIdx) }).addTo(stratoTappe);
+        mk.on("click", (function (idx) { return function () { selezionaTappaMappa(idx); }; })(i));
+        markerRefs[i] = mk;
         punti.push([s.lat, s.lon]);
       });
       if (punti.length > 1) {
@@ -526,33 +600,45 @@ import {
       if (punti.length) {
         m.invalidateSize();
         if (punti.length === 1) m.setView(punti[0], 15);
-        else m.fitBounds(punti, { padding: [34, 34] });
+        else m.fitBounds(punti, { padding: [34, 60] });
       }
     }
 
-    var ml = document.getElementById("maplist");
-    ml.innerHTML = "";
-    list.forEach(function (s, i) {
-      var row = document.createElement("div");
-      row.className = "mapstop";
-      var gq = encodeURIComponent(s.q || s.title);
-      row.innerHTML =
-        '<div class="top">' +
-        '<div class="thumb small" style="background-image:url(\'' + imgFor(s) + '\')"><div class="badge">' + (i + 1) + "</div></div>" +
-        '<div style="flex:1;min-width:0;">' +
-        '<div class="title">' + escapeHtml(s.title) + "</div>" +
-        '<div class="sub">' + s.time + " · " + escapeHtml(s.sub || "") + "</div>" +
-        "</div>" +
-        "</div>" +
-        '<div class="links">' +
-        '<a class="linkbtn" target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' + gq + '"><svg><use href="#ic-pin"/></svg>Google Maps</a>' +
-        '<a class="linkbtn" target="_blank" rel="noopener" href="https://maps.apple.com/?q=' + gq + '"><svg><use href="#ic-pin"/></svg>Apple Maps</a>' +
-        "</div>";
-      ml.appendChild(row);
+    aggiornaMapCard(list);
+  }
+
+  // Tocco su un pin, o sulle frecce della card: cambia solo quale tappa è
+  // "a fuoco" in basso, senza ridisegnare tutta la mappa.
+  function selezionaTappaMappa(idx) {
+    mapSelIdx = idx;
+    markerRefs.forEach(function (mk, i) {
+      if (mk) mk.setIcon(iconaPin(i + 1, i === idx));
     });
-    if (list.length === 0) {
-      ml.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:20px 10px;font-size:.85rem;">Nessuna tappa da mostrare per questo giorno.</div>';
+    var list = stopsForDay(selectedDay.itinerario);
+    var s = list[idx];
+    if (s && s.lat != null && mappa) mappa.panTo([s.lat, s.lon]);
+    aggiornaMapCard(list);
+  }
+
+  function aggiornaMapCard(list) {
+    var body = document.getElementById("map-card-body");
+    if (!body) return;
+    var s = list[mapSelIdx];
+    if (!s) {
+      body.innerHTML = '<div class="empty">Nessuna tappa da mostrare per questo giorno.</div>';
+      return;
     }
+    var o = (window.TRAVI_ORARI || {})[s.id];
+    var orarioTxt = o && o.tipo === "orari" ? (o.ap + "–" + o.ch) : (o && o.tipo === "sempre" ? "sempre aperto" : "");
+    body.innerHTML =
+      '<div class="top">' +
+      '<div class="thumb" style="background-image:url(\'' + imgFor(s) + '\')"></div>' +
+      '<div class="info">' +
+      '<div class="title">' + escapeHtml(s.title) + "</div>" +
+      '<div class="sub">' + s.time + (s.sub ? " · " + escapeHtml(s.sub) : "") + (orarioTxt ? " · " + orarioTxt : "") + "</div>" +
+      "</div></div>" +
+      '<button class="map-details">Vedi dettagli</button>';
+    body.querySelector(".map-details").addEventListener("click", function () { openSheet(s.id); });
   }
 
   function renderHome() {
@@ -572,10 +658,17 @@ import {
 
     var list = stopsForDay(refDayId);
     var done = list.filter(function (s) { return s.done; }).length;
-    document.getElementById("home-count").innerHTML = list.length + ' <small>luoghi' + (done ? " · " + done + " completati" : "") + "</small>";
+    document.getElementById("home-count").innerHTML = list.length + " <small>luoghi in programma</small>";
     var pct = list.length ? Math.round((done / list.length) * 100) : 0;
     document.getElementById("home-pct").textContent = pct + "%";
-    document.getElementById("home-bar").style.width = pct + "%";
+    var ring = document.getElementById("ring-fg");
+    if (ring) {
+      var circ = 263.9; // 2·π·42 (raggio del cerchio in index.html)
+      ring.style.strokeDashoffset = String(circ - (circ * pct / 100));
+    }
+    document.getElementById("home-done-lbl").textContent =
+      done === 0 ? "Nessuna tappa completata ancora" :
+      (done === list.length ? "Giornata completata" : done + " di " + list.length + " completate");
     document.getElementById("home-stops-total").textContent = allStops().length;
 
     var startDiff = Math.ceil((new Date(TRIP.start + "T09:00:00") - now) / 86400000);
@@ -596,14 +689,8 @@ import {
     var glyph = document.getElementById("next-glyph");
     if (next) {
       document.getElementById("next-title").textContent = next.title;
-      var nextImg = imgFor(next);
-      if (nextImg) {
-        glyph.classList.add("has-img");
-        glyph.style.backgroundImage = "url('" + nextImg + "')";
-      } else {
-        glyph.classList.remove("has-img");
-        glyph.style.backgroundImage = "";
-      }
+      glyph.classList.add("has-img");
+      glyph.style.backgroundImage = "url('" + imgFor(next) + "')";
       var mins = timeToMin(next.time) - (now.getHours() * 60 + now.getMinutes());
       var whenTxt = next.time + (next.sub ? " · " + next.sub : "");
       if (isTripLive && refDayId === defaultDay() && mins > 0 && mins < 600) {
@@ -625,6 +712,17 @@ import {
      nell'HTML. Quando ci si avvicina, questo lo sostituisce in automatico con
      una previsione vera per la città del giorno. */
   var weatherFetchedFor = null;
+  // Codici WMO (li usa Open-Meteo) ridotti alle famiglie che contano per un
+  // colpo d'occhio: icona + parola, non il bollettino completo.
+  var WMO = {
+    0: ["ic-sun", "Sereno"], 1: ["ic-sun", "Poco nuvoloso"], 2: ["ic-cloud", "Parzialmente nuvoloso"], 3: ["ic-cloud", "Nuvoloso"],
+    45: ["ic-cloud", "Nebbia"], 48: ["ic-cloud", "Nebbia"],
+    51: ["ic-rain", "Pioggerella"], 53: ["ic-rain", "Pioggerella"], 55: ["ic-rain", "Pioggerella"],
+    61: ["ic-rain", "Pioggia debole"], 63: ["ic-rain", "Pioggia"], 65: ["ic-rain", "Pioggia forte"],
+    71: ["ic-snow", "Neve debole"], 73: ["ic-snow", "Neve"], 75: ["ic-snow", "Neve forte"],
+    80: ["ic-rain", "Rovesci"], 81: ["ic-rain", "Rovesci"], 82: ["ic-rain", "Rovesci forti"],
+    95: ["ic-rain", "Temporale"], 96: ["ic-rain", "Temporale"], 99: ["ic-rain", "Temporale"]
+  };
   function updateWeather(refDay) {
     if (!refDay) return;
     var today = new Date();
@@ -637,16 +735,20 @@ import {
     var coords = CITY_COORDS[city];
     if (!coords) return;
     var url = "https://api.open-meteo.com/v1/forecast?latitude=" + coords.lat + "&longitude=" + coords.lon +
-      "&daily=temperature_2m_max,temperature_2m_min&timezone=Asia%2FTokyo&start_date=" + refDay.date + "&end_date=" + refDay.date;
+      "&daily=temperature_2m_max,temperature_2m_min,weathercode&timezone=Asia%2FTokyo&start_date=" + refDay.date + "&end_date=" + refDay.date;
     fetch(url).then(function (r) { return r.json(); }).then(function (data) {
       if (!data || !data.daily || !data.daily.temperature_2m_max || !data.daily.temperature_2m_max.length) return;
       weatherFetchedFor = cacheKey;
       var lo = Math.round(data.daily.temperature_2m_min[0]);
       var hi = Math.round(data.daily.temperature_2m_max[0]);
-      var pill = document.querySelector(".weather-pill");
-      if (!pill) return;
-      pill.querySelector(".t").textContent = lo + "–" + hi + "°";
-      pill.querySelector(".cap").textContent = "previsione per " + city;
+      var code = data.daily.weathercode ? data.daily.weathercode[0] : null;
+      var info = WMO[code] || null;
+      var tEl = document.getElementById("weather-t");
+      var cEl = document.getElementById("weather-cond");
+      var iEl = document.getElementById("weather-icon");
+      if (tEl) tEl.textContent = lo + "–" + hi + "°";
+      if (cEl) cEl.textContent = (info ? info[1] : "Previsione") + " per " + city;
+      if (iEl && info) { var use = iEl.querySelector("use"); if (use) use.setAttribute("href", "#" + info[0]); }
     }).catch(function () { /* offline o API non raggiungibile: resta il testo statico */ });
   }
 
@@ -665,12 +767,28 @@ import {
   function renderAll() {
     if (!dataLoaded) return;
     renderDayRow("dayrow-itin", "itinerario");
-    renderDayRow("dayrow-map", "mappa");
     renderItinerario();
     renderMappa();
     renderHome();
     renderBudget();
+    renderPreferiti();
   }
+
+  // Frecce della card della Mappa: cambiano solo la tappa a fuoco, come
+  // toccare un pin diverso. Collegate una volta sola, non ad ogni render.
+  document.getElementById("map-prev").addEventListener("click", function () {
+    var list = stopsForDay(selectedDay.itinerario);
+    if (!list.length) return;
+    selezionaTappaMappa((mapSelIdx - 1 + list.length) % list.length);
+  });
+  document.getElementById("map-next").addEventListener("click", function () {
+    var list = stopsForDay(selectedDay.itinerario);
+    if (!list.length) return;
+    selezionaTappaMappa((mapSelIdx + 1) % list.length);
+  });
+  // La pillola in alto RIPORTA il giorno scelto in Itinerario, non lo sceglie:
+  // toccarla porta all'Itinerario, dove il giorno si cambia davvero.
+  document.getElementById("map-daypill").addEventListener("click", function () { switchView("itinerario"); });
 
   /* ---------- budget extra ---------- */
   function fmtEuro(n) {
@@ -714,7 +832,11 @@ import {
     var view = document.getElementById("view-" + name);
     view.classList.add("active");
     document.querySelectorAll(".tab").forEach(function (t) { t.classList.toggle("active", t.dataset.view === name); });
-    document.getElementById("fab-add").style.display = name === "itinerario" ? "flex" : "none";
+    // Il "+" fluttuante serve sia in Itinerario (nuova tappa) sia in Preferiti
+    // (nuovo preferito): cosa apre dipende da dove ci si trova.
+    var fabAdd = document.getElementById("fab-add");
+    fabAdd.style.display = (name === "itinerario" || name === "preferiti") ? "flex" : "none";
+    fabAdd.onclick = (name === "preferiti") ? function () { openFavSheet(); } : function () { openSheet(null); };
     // ogni volta che si cambia pagina dal menu, si riparte sempre dall'inizio di quella pagina
     var sc = view.querySelector(".scroll");
     if (sc) sc.scrollTop = 0;
@@ -738,7 +860,7 @@ import {
       var p = document.createElement("div");
       p.className = "pick";
       p.dataset.id = it.id;
-      p.innerHTML = '<svg><use href="#' + it.icon + '"/></svg>' + it.label;
+      p.innerHTML = (it.icon ? '<svg><use href="#' + it.icon + '"/></svg>' : "") + it.label;
       p.addEventListener("click", function () {
         el.querySelectorAll(".pick").forEach(function (x) { x.classList.remove("sel"); });
         p.classList.add("sel");
@@ -749,6 +871,21 @@ import {
   buildPickrow("f-category", CATS);
   buildPickrow("f-transport", TRANSPORTS);
   buildPickrow("f-priorita", PRIORITA);
+  buildPickrow("f-duration-chips", DURATA_OPTS);
+  buildPickrow("fav-category", CATS);
+  buildPickrow("fav-priorita", PRIORITA);
+
+  // Sceglie il chip di durata più vicino a un valore qualunque (dati vecchi,
+  // o una tappa senza durata mai compilata): il campo non è mai vuoto.
+  function selectDurataVicina(dur) {
+    var target = dur || 30;
+    var migliore = DURATA_OPTS[0], diffMin = Infinity;
+    DURATA_OPTS.forEach(function (o) {
+      var diff = Math.abs(parseInt(o.id, 10) - target);
+      if (diff < diffMin) { diffMin = diff; migliore = o; }
+    });
+    selectPick("f-duration-chips", migliore.id);
+  }
 
   function selectPick(containerId, id) {
     document.getElementById(containerId).querySelectorAll(".pick").forEach(function (p) {
@@ -760,15 +897,25 @@ import {
     return sel ? sel.dataset.id : null;
   }
 
+  // Ricordano, per la tappa in modifica, ciò che non ha un campo di testo suo:
+  // la posizione trovata cercando il posto, e una foto già presente da non
+  // ricercare di nuovo se non cambia il posto.
+  var sheetLatLon = null, sheetExistingFoto = null;
+
   function openSheet(stopId) {
     editingId = stopId || null;
     var s = editingId ? allStops().find(function (x) { return x.id === editingId; }) : null;
     var locked = !!(s && s.locked);
+    sheetLatLon = (s && s.lat != null) ? { lat: s.lat, lon: s.lon } : null;
+    sheetExistingFoto = (s && s.foto) ? s.foto : null;
+
     document.getElementById("sheet-title").textContent = s ? "Modifica tappa" : "Nuova tappa";
+    document.getElementById("f-cerca").value = "";
+    document.getElementById("cerca-risultati").hidden = true;
     document.getElementById("f-title").value = s ? s.title : "";
     document.getElementById("f-sub").value = s ? s.sub || "" : "";
     document.getElementById("f-time").value = s ? s.time : "09:00";
-    document.getElementById("f-duration").value = s ? s.dur || 30 : 30;
+    selectDurataVicina(s ? s.dur : 30);
     document.getElementById("f-travel").value = s ? s.tmin || 0 : 0;
     document.getElementById("f-notes").value = s ? s.notes || "" : "";
     selectPick("f-category", s ? s.cat : "experience");
@@ -782,9 +929,25 @@ import {
     document.getElementById("btn-delete").style.display = (s && !locked) ? "block" : "none";
     document.getElementById("lock-note").hidden = !locked;
     sheet.querySelector(".sheet-body").classList.toggle("locked", locked);
-    ["f-title", "f-sub", "f-time", "f-duration", "f-travel", "f-notes"].forEach(function (id) {
+    ["f-title", "f-sub", "f-time", "f-travel", "f-notes"].forEach(function (id) {
       document.getElementById(id).disabled = locked;
     });
+
+    // Link rapidi verso Google/Apple Maps: solo su una tappa che già esiste
+    // (per una nuova non c'è ancora niente da aprire).
+    var quicklinks = document.getElementById("quicklinks");
+    if (s) {
+      quicklinks.hidden = false;
+      var gq = encodeURIComponent(s.q || (s.title + " " + (s.sub || "")));
+      document.getElementById("link-gmaps").href = "https://www.google.com/maps/search/?api=1&query=" + gq;
+      document.getElementById("link-amaps").href = "https://maps.apple.com/?q=" + gq;
+    } else {
+      quicklinks.hidden = true;
+    }
+
+    document.getElementById("altro-body").hidden = true;
+    document.getElementById("altro-toggle").classList.remove("open");
+
     backdrop.classList.add("show");
     sheet.classList.add("show");
   }
@@ -796,6 +959,268 @@ import {
   document.getElementById("sheet-close").addEventListener("click", closeSheet);
   backdrop.addEventListener("click", closeSheet);
   document.getElementById("f-done").addEventListener("click", function () { this.classList.toggle("on"); });
+  document.getElementById("altro-toggle").addEventListener("click", function () {
+    var body = document.getElementById("altro-body");
+    var apri = body.hidden;
+    body.hidden = !apri;
+    this.classList.toggle("open", apri);
+  });
+
+  // Cerca il posto (Nominatim, vedi js/cerca-luogo.js): riempie titolo, zona e
+  // posizione da un risultato scelto, invece di doverli scrivere a mano.
+  function agganciaRicerca(inputId, boxId, onScelta) {
+    var timer = null;
+    document.getElementById(inputId).addEventListener("input", function () {
+      var q = this.value;
+      clearTimeout(timer);
+      timer = setTimeout(function () {
+        var box = document.getElementById(boxId);
+        if (!window.TraviCerca) return;
+        window.TraviCerca.cerca(q).then(function (risultati) {
+          if (!risultati.length) { box.hidden = true; box.innerHTML = ""; return; }
+          box.innerHTML = "";
+          risultati.forEach(function (r) {
+            var row = document.createElement("div");
+            row.className = "cerca-riga";
+            row.innerHTML = '<div class="t">' + escapeHtml(r.title) + '</div><div class="s">' + escapeHtml(r.sub) + '</div>';
+            row.addEventListener("click", function () {
+              box.hidden = true;
+              document.getElementById(inputId).value = "";
+              onScelta(r);
+            });
+            box.appendChild(row);
+          });
+          box.hidden = false;
+        });
+      }, 400);
+    });
+  }
+  agganciaRicerca("f-cerca", "cerca-risultati", function (r) {
+    document.getElementById("f-title").value = r.title;
+    document.getElementById("f-sub").value = r.sub;
+    sheetLatLon = { lat: r.lat, lon: r.lon };
+    sheetExistingFoto = null; // il posto è cambiato: la foto va ricercata di nuovo
+  });
+
+  /* ---------- Preferiti ---------- */
+  // Lista dei desideri non ancora programmati: raggruppati per città, si
+  // "pianificano" su un giorno preciso solo quando si vuole, verificati dallo
+  // stesso motore dell'Itinerario (js/giornata.js) — mai a caso.
+  function renderPreferiti() {
+    var el = document.getElementById("fav-groups");
+    if (!el) return;
+    el.innerHTML = "";
+    if (!state.favorites.length) {
+      el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:40px 20px;font-size:.85rem;">Nessun preferito ancora. Aggiungete un posto che volete vedere: potrete assegnarlo a un giorno quando volete, verificando prima se ci sta davvero.</div>';
+      return;
+    }
+    var groups = {}, ordine = [];
+    state.favorites.forEach(function (f) {
+      var c = cityKeyForFav((f.sub || "") + " " + (f.title || ""));
+      if (!groups[c]) { groups[c] = []; ordine.push(c); }
+      groups[c].push(f);
+    });
+    ordine.sort(function (a, b) { return a === "Altro" ? 1 : (b === "Altro" ? -1 : a.localeCompare(b)); });
+    ordine.forEach(function (city) {
+      var h = document.createElement("div");
+      h.className = "fav-city-heading";
+      h.textContent = city;
+      el.appendChild(h);
+      groups[city].forEach(function (f) {
+        var card = document.createElement("div");
+        card.className = "fav-card";
+        card.innerHTML =
+          '<div class="thumb" style="background-image:url(\'' + imgFor(f) + '\')"></div>' +
+          '<div class="content">' +
+          '<div class="title">' + escapeHtml(f.title) + "</div>" +
+          '<div class="sub">' + escapeHtml(f.sub || "") + "</div>" +
+          (f.notes ? '<div class="fav-notes">' + escapeHtml(f.notes) + "</div>" : "") +
+          "</div>" +
+          '<div class="fav-actions">' +
+          '<button class="fav-plan">Pianifica</button>' +
+          '<button class="fav-del" aria-label="Rimuovi">✕</button>' +
+          "</div>";
+        card.querySelector(".fav-plan").addEventListener("click", function () { apriPreferenza(f.id); });
+        card.querySelector(".fav-del").addEventListener("click", function () {
+          state.favorites = state.favorites.filter(function (x) { return x.id !== f.id; });
+          persist();
+          toast("Rimosso dai preferiti");
+        });
+        el.appendChild(card);
+      });
+    });
+  }
+
+  /* ---------- foglio "nuovo preferito" ---------- */
+  var favSheet = document.getElementById("fav-sheet");
+  var favLatLon = null;
+
+  function openFavSheet() {
+    document.getElementById("fav-cerca").value = "";
+    document.getElementById("fav-cerca-risultati").hidden = true;
+    document.getElementById("fav-title").value = "";
+    document.getElementById("fav-sub").value = "";
+    document.getElementById("fav-notes").value = "";
+    selectPick("fav-category", "experience");
+    selectPick("fav-priorita", "norm");
+    favLatLon = null;
+    backdrop.classList.add("show");
+    favSheet.classList.add("show");
+  }
+  function closeFavSheet() {
+    backdrop.classList.remove("show");
+    favSheet.classList.remove("show");
+  }
+  document.getElementById("fav-close").addEventListener("click", closeFavSheet);
+  backdrop.addEventListener("click", closeFavSheet);
+  document.getElementById("btn-add-fav").addEventListener("click", function () { openFavSheet(); });
+
+  agganciaRicerca("fav-cerca", "fav-cerca-risultati", function (r) {
+    document.getElementById("fav-title").value = r.title;
+    document.getElementById("fav-sub").value = r.sub;
+    favLatLon = { lat: r.lat, lon: r.lon };
+  });
+
+  document.getElementById("fav-save").addEventListener("click", function () {
+    var title = document.getElementById("fav-title").value.trim();
+    if (!title) { toast("Serve almeno un titolo"); return; }
+    var newId = "fav-" + Date.now();
+    var fav = {
+      id: newId, title: title,
+      sub: document.getElementById("fav-sub").value.trim(),
+      cat: getPick("fav-category") || "experience",
+      prio: getPick("fav-priorita") || "norm",
+      notes: document.getElementById("fav-notes").value.trim(),
+      createdAt: Date.now()
+    };
+    if (favLatLon) { fav.lat = favLatLon.lat; fav.lon = favLatLon.lon; }
+    state.favorites.push(fav);
+    closeFavSheet();
+    persist();
+    toast("Aggiunto ai preferiti");
+
+    if (window.TraviFoto) {
+      window.TraviFoto.cerca(fav.title + " " + fav.sub).then(function (url) {
+        if (!url) return;
+        state.favorites = state.favorites.map(function (f) { return f.id === newId ? Object.assign({}, f, { foto: url }) : f; });
+        persist();
+      });
+    }
+  });
+
+  /* ---------- foglio "pianifica un preferito" ---------- */
+  // Riusa lo stesso motore usato per lo spostamento fra giorni in Itinerario
+  // (giorniAlternativi): prova ogni giorno e ogni posizione, e propone solo
+  // quelli dove Travi ha VERIFICATO che c'è spazio — non un semplice elenco
+  // di giorni a caso. Chi vuole decidere comunque diversamente può farlo,
+  // scegliendo giorno e orario da sé più sotto.
+  var assignSheet = document.getElementById("assign-sheet");
+
+  function apriPreferenza(favId) {
+    var fav = state.favorites.find(function (f) { return f.id === favId; });
+    if (!fav) return;
+    var tappaFinta = {
+      id: fav.id, title: fav.title, sub: fav.sub, cat: fav.cat, prio: fav.prio,
+      lat: fav.lat, lon: fav.lon, dur: fav.dur || 45, time: "12:00",
+      done: false, locked: false
+    };
+    var giorni = DAYS.map(function (d) { return { id: d.id, date: d.date, city: d.city, tappe: stopsForDay(d.id) }; });
+    var suggeriti = (window.Giornata && window.Giornata.giorniAlternativi)
+      ? window.Giornata.giorniAlternativi(tappaFinta, giorni, "__nessuno__", window.TRAVI_ORARI, null)
+      : [];
+    renderAssignBody(fav, suggeriti);
+    backdrop.classList.add("show");
+    assignSheet.classList.add("show");
+  }
+  function closeAssignSheet() {
+    backdrop.classList.remove("show");
+    assignSheet.classList.remove("show");
+  }
+  document.getElementById("assign-close").addEventListener("click", closeAssignSheet);
+  backdrop.addEventListener("click", closeAssignSheet);
+
+  function renderAssignBody(fav, suggeriti) {
+    var body = document.getElementById("assign-body");
+    var html = '<div class="assign-fav-title">' + escapeHtml(fav.title) + "</div>" +
+               '<div class="assign-fav-sub">' + escapeHtml(fav.sub || "") + "</div>";
+    if (suggeriti.length) {
+      html += '<div class="assign-lead">Giorni dove Travi ha verificato che c’è spazio, dal più comodo:</div>';
+      suggeriti.slice(0, 4).forEach(function (a) {
+        html += '<button class="assign-opt" data-day="' + a.id + '" data-dopo="' + (a.dopoDi ? escapeHtml(a.dopoDi) : "") + '">' +
+                '<div class="d">' + a.date.slice(8) + "/" + a.date.slice(5, 7) + " · " + escapeHtml(a.city) + "</div>" +
+                '<div class="c">' + a.tappeQuelGiorno + " tappe già in programma</div>" +
+                '<div class="fine">finirebbe alle ' + a.fineCon + "</div>" +
+                "</button>";
+      });
+    } else {
+      html += '<div class="assign-lead">Nessun giorno ha spazio sicuro per starci: scegliete voi, tenendo d’occhio la giornata dopo averlo aggiunto.</div>';
+    }
+    html += '<div class="assign-manuale"><label>Oppure scegliete voi giorno e orario</label>' +
+            '<div class="dayrow" id="assign-dayrow"></div>' +
+            '<input type="time" id="assign-time" value="09:00">' +
+            '<button class="btn primary" id="assign-manuale-conferma" style="width:100%;">Aggiungi comunque</button></div>';
+    body.innerHTML = html;
+
+    body.querySelectorAll(".assign-opt").forEach(function (btn) {
+      btn.addEventListener("click", function () {
+        pianificaPreferenza(fav, this.dataset.day, this.dataset.dopo || null);
+      });
+    });
+
+    var dayrowEl = document.getElementById("assign-dayrow");
+    var scelto = DAYS.length ? DAYS[0].id : null;
+    DAYS.forEach(function (d) {
+      var pill = document.createElement("div");
+      pill.className = "daypill" + (d.id === scelto ? " active" : "");
+      pill.innerHTML = '<div class="dw">' + weekdayShort(d.date) + '</div><div class="dn num">' + dayNum(d.date) + "</div>";
+      pill.addEventListener("click", function () {
+        scelto = d.id;
+        dayrowEl.querySelectorAll(".daypill").forEach(function (p) { p.classList.remove("active"); });
+        pill.classList.add("active");
+      });
+      dayrowEl.appendChild(pill);
+    });
+    document.getElementById("assign-manuale-conferma").addEventListener("click", function () {
+      if (!scelto) { toast("Non ci sono giorni nel viaggio"); return; }
+      var ora = document.getElementById("assign-time").value || "09:00";
+      confermaPreferenza(fav, scelto, ora);
+    });
+  }
+
+  // Posizione consigliata da giorniAlternativi: subito dopo "dopoDi", oppure
+  // un'ora prima della prima tappa se va messa in testa al giorno.
+  function pianificaPreferenza(fav, dayId, dopoTitolo) {
+    var dest = stopsForDay(dayId);
+    var nuovaOra = "09:00";
+    if (dopoTitolo) {
+      var rif = dest.find(function (x) { return x.title === dopoTitolo; });
+      if (rif) {
+        var m = window.Giornata.min(rif.time) + (rif.dur || 0) + 15;
+        nuovaOra = window.Giornata.hhmm(m).replace("+1", "");
+      }
+    } else if (dest.length) {
+      nuovaOra = window.Giornata.hhmm(Math.max(0, window.Giornata.min(dest[0].time) - 60));
+    }
+    confermaPreferenza(fav, dayId, nuovaOra);
+  }
+
+  function confermaPreferenza(fav, dayId, time) {
+    var newId = "custom-" + Date.now();
+    var nuovaTappa = {
+      id: newId, title: fav.title, sub: fav.sub || "", cat: fav.cat || "experience",
+      prio: fav.prio || "norm", notes: fav.notes || "", dur: fav.dur || 45, tmin: 0, tmode: "walk",
+      day: dayId, time: time, done: false,
+      q: fav.title + " " + (fav.sub || "")
+    };
+    // di nuovo: lat/lon/foto entrano nel payload solo se esistono davvero.
+    if (fav.lat != null) { nuovaTappa.lat = fav.lat; nuovaTappa.lon = fav.lon; }
+    if (fav.foto) nuovaTappa.foto = fav.foto;
+    state.custom.push(nuovaTappa);
+    state.favorites = state.favorites.filter(function (f) { return f.id !== fav.id; });
+    closeAssignSheet();
+    persist();
+    toast("Aggiunto all'itinerario del " + ((dayById(dayId) || {}).date || ""));
+  }
 
   /* ---------- foglio budget extra ---------- */
   var budgetSheet = document.getElementById("budget-sheet");
@@ -848,7 +1273,7 @@ import {
       title: title,
       sub: document.getElementById("f-sub").value.trim(),
       time: document.getElementById("f-time").value || "09:00",
-      dur: parseInt(document.getElementById("f-duration").value, 10) || 0,
+      dur: parseInt(getPick("f-duration-chips"), 10) || 30,
       tmin: parseInt(document.getElementById("f-travel").value, 10) || 0,
       notes: document.getElementById("f-notes").value.trim(),
       cat: getPick("f-category") || "experience",
@@ -856,7 +1281,14 @@ import {
       prio: getPick("f-priorita") || "norm",
       done: document.getElementById("f-done").classList.contains("on"),
     };
+    // undefined non è un valore che Firestore accetta: questi due campi
+    // esistono nel payload SOLO quando c'è davvero un valore da mettere.
+    if (sheetLatLon) { payload.lat = sheetLatLon.lat; payload.lon = sheetLatLon.lon; }
+    if (sheetExistingFoto) payload.foto = sheetExistingFoto;
+
+    var idPerFoto;
     if (editingId) {
+      idPerFoto = editingId;
       var isCustom = state.custom.some(function (c) { return c.id === editingId; });
       if (isCustom) {
         state.custom = state.custom.map(function (c) { return c.id === editingId ? Object.assign({}, c, payload) : c; });
@@ -870,10 +1302,27 @@ import {
       payload.day = selectedDay.itinerario;
       payload.q = payload.title + " " + payload.sub;
       state.custom.push(payload);
+      idPerFoto = newId;
       toast("Tappa aggiunta");
     }
     closeSheet();
     persist();
+
+    // Nessuna foto già presente: la si cerca in background (vedi js/foto.js),
+    // il salvataggio non aspetta la rete. Vale sia per una tappa scritta a
+    // mano sia per una scelta dalla ricerca senza una foto trovata prima.
+    if (!payload.foto && window.TraviFoto) {
+      window.TraviFoto.cerca(payload.title + " " + payload.sub).then(function (url) {
+        if (!url) return;
+        var isCustomNow = state.custom.some(function (c) { return c.id === idPerFoto; });
+        if (isCustomNow) {
+          state.custom = state.custom.map(function (c) { return c.id === idPerFoto ? Object.assign({}, c, { foto: url }) : c; });
+        } else {
+          state.overrides[idPerFoto] = Object.assign({}, state.overrides[idPerFoto] || {}, { foto: url });
+        }
+        persist();
+      });
+    }
   });
 
   document.getElementById("btn-delete").addEventListener("click", function () {
@@ -889,7 +1338,8 @@ import {
   });
 
   document.getElementById("btn-add-stop").addEventListener("click", function () { openSheet(null); });
-  document.getElementById("fab-add").addEventListener("click", function () { openSheet(null); });
+  // fab-add: il suo click handler viene assegnato da switchView() (apre la
+  // tappa o il preferito a seconda della vista attiva), non qui.
 
   /* ---------- recalc day ---------- */
   document.getElementById("btn-recalc").addEventListener("click", function () {
