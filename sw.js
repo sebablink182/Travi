@@ -5,7 +5,7 @@
 // Il numero nel nome della cache va alzato ogni volta che questo file cambia:
 // è quello che fa sì che una PWA già installata sul telefono butti via la
 // cache vecchia invece di restare bloccata su una copia obsoleta dei file.
-const CACHE_NAME = "travi-shell-v5";
+const CACHE_NAME = "travi-shell-v6";
 const SHELL_FILES = [
   "./",
   "./index.html",
@@ -14,6 +14,7 @@ const SHELL_FILES = [
   "./js/app.js",
   "./js/firebase-init.js",
   "./js/firebase-config.js",
+  "./js/coords.js",
   "./icons/icon-192.png",
   "./icons/icon-512.png",
   "./assets/img/hero.jpg"

@@ -139,6 +139,7 @@ import {
         TRIP = data.trip || TRIP;
         DAYS = data.days || [];
         SEED_STOPS = data.stops || [];
+        innestaCoordinate();
       } else {
         DAYS = [];
         SEED_STOPS = [];
@@ -155,6 +156,17 @@ import {
         '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);">' +
         "Non riesco a leggere i dati del viaggio da Firestore.<br>Controllate le Firestore Rules e che l'itinerario sia stato caricato con admin-seed.html.</div>";
       console.error(err);
+    });
+  }
+
+  // L'itinerario su Firestore è stato caricato prima che le coordinate
+  // esistessero. Invece di riscriverlo (cancellando le vostre modifiche) le
+  // innesto qui all'avvio, e SOLO dove mancano: se un giorno l'itinerario verrà
+  // ricaricato con le coordinate dentro, questa funzione non farà più nulla.
+  function innestaCoordinate() {
+    var C = window.TRAVI_COORDS || {};
+    SEED_STOPS.forEach(function (s) {
+      if (s.lat == null && C[s.id]) { s.lat = C[s.id][0]; s.lon = C[s.id][1]; }
     });
   }
 
@@ -278,19 +290,53 @@ import {
     }
   }
 
-  var lastMapQuery = null;
+  // Mappa vera (Leaflet + Stadia Alidade Smooth). Il fondo mappa è autorizzato
+  // per dominio nel pannello Stadia, quindi qui non c'è nessuna chiave: se un
+  // giorno le piastrelle sparissero, è là che va aggiunto il dominio nuovo.
+  var mappa = null, stratoTappe = null;
+
+  function creaMappa() {
+    if (mappa || typeof L === "undefined") return mappa;
+    mappa = L.map("map", { zoomControl: true, attributionControl: true });
+    L.tileLayer("https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png", {
+      attribution: '&copy; <a href="https://stadiamaps.com/">Stadia Maps</a> &copy; OpenStreetMap',
+      maxZoom: 19
+    }).addTo(mappa);
+    stratoTappe = L.layerGroup().addTo(mappa);
+    mappa.setView([35.68, 139.76], 11);
+    return mappa;
+  }
   function renderMappa() {
     if (!DAYS.length || !selectedDay.mappa) return;
     var list = stopsForDay(selectedDay.mappa);
     var day = dayById(selectedDay.mappa);
-    // Mappa vera (Google Maps embed, senza bisogno di una chiave API): centrata
-    // sulla città del giorno. Per avere TUTTE le tappe come pin numerati sulla
-    // stessa mappa servirebbe la Google Maps JavaScript API (richiede una chiave,
-    // gratuita fino a un buon volume di utilizzo) — ne parliamo se interessa.
-    var mapQuery = cityKeyFor(day ? day.city : "") + ", Japan";
-    if (mapQuery !== lastMapQuery) {
-      lastMapQuery = mapQuery;
-      document.getElementById("map-embed").src = "https://www.google.com/maps?q=" + encodeURIComponent(mapQuery) + "&output=embed";
+    // Pin numerati + percorso del giorno. I numeri corrispondono all'ordine
+    // delle tappe nell'elenco qui sotto, così mappa ed elenco si leggono insieme.
+    var m = creaMappa();
+    if (m) {
+      stratoTappe.clearLayers();
+      var punti = [];
+      list.forEach(function (s, i) {
+        if (s.lat == null || s.lon == null) return;
+        var icona = L.divIcon({
+          className: "", html: '<div class="pin-num">' + (i + 1) + "</div>",
+          iconSize: [26, 26], iconAnchor: [13, 13]
+        });
+        L.marker([s.lat, s.lon], { icon: icona })
+          .bindPopup("<b>" + escapeHtml(s.title) + "</b><br>" + s.time +
+                     (s.sub ? " · " + escapeHtml(s.sub) : ""))
+          .addTo(stratoTappe);
+        punti.push([s.lat, s.lon]);
+      });
+      if (punti.length > 1) {
+        L.polyline(punti, { color: "#F5503C", weight: 3, opacity: .6, dashArray: "6 7" })
+          .addTo(stratoTappe);
+      }
+      if (punti.length) {
+        m.invalidateSize();
+        if (punti.length === 1) m.setView(punti[0], 15);
+        else m.fitBounds(punti, { padding: [34, 34] });
+      }
     }
 
     var ml = document.getElementById("maplist");
@@ -481,6 +527,10 @@ import {
     // ogni volta che si cambia pagina dal menu, si riparte sempre dall'inizio di quella pagina
     var sc = view.querySelector(".scroll");
     if (sc) sc.scrollTop = 0;
+    // Leaflet misura il contenitore quando lo crea: se la vista era nascosta
+    // trova altezza zero e disegna la mappa storta. Va rimisurata ogni volta
+    // che la pagina Mappa torna visibile.
+    if (name === "mappa" && mappa) { setTimeout(function () { mappa.invalidateSize(); }, 60); }
   }
   document.querySelectorAll(".tab").forEach(function (t) {
     t.addEventListener("click", function () { switchView(t.dataset.view); });
