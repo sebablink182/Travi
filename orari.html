@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Orari delle tappe</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font:400 15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+       background:#FAFAF9;color:#1C1C1E;padding-bottom:60px}
+  header{padding:calc(env(safe-area-inset-top) + 12px) 14px 12px;background:#fff;
+         border-bottom:1px solid #EAEAE8;position:sticky;top:0;z-index:10}
+  h1{font-size:17px;font-weight:600}
+  p.sub{font-size:13px;color:#8E8E93;margin-top:3px}
+  .filtri{display:flex;gap:6px;margin-top:10px}
+  .filtri button{flex:1;padding:8px;border:1px solid #EAEAE8;background:#fff;border-radius:10px;
+                 font:600 12px inherit;font-family:inherit;color:#1C1C1E}
+  .filtri button.on{background:#F5503C;border-color:#F5503C;color:#fff}
+  .giorno{padding:16px 14px 5px;font:600 13px inherit;color:#8E8E93;
+          text-transform:uppercase;letter-spacing:.05em}
+  .t{background:#fff;border:1px solid #EAEAE8;border-radius:16px;margin:0 14px 9px;padding:13px}
+  .t.nd{opacity:.5}
+  .cap{display:flex;align-items:flex-start;gap:9px}
+  .cap .ora{flex:none;font:600 13px inherit;color:#8E8E93;width:42px;font-variant-numeric:tabular-nums}
+  .cap .tit{flex:1;min-width:0;font-size:15px;font-weight:600}
+  .badge{flex:none;font:700 9px inherit;padding:3px 7px;border-radius:99px;letter-spacing:.04em}
+  .b-ok{background:#DFF3E6;color:#1E7A45}
+  .b-alta{background:#E8EEF6;color:#2C5282}
+  .b-media{background:#FDF0DC;color:#8A5A18}
+  .nota{font-size:12px;color:#8E8E93;margin-top:5px;padding-left:51px}
+  .riga2{display:flex;align-items:center;gap:7px;margin-top:9px;padding-left:51px;flex-wrap:wrap}
+  .riga2 select,.riga2 input{padding:7px 9px;border:1px solid #EAEAE8;border-radius:9px;
+                             font:13px inherit;font-family:inherit;background:#FAFAF9}
+  .riga2 input[type=time]{width:96px}
+  .riga2 a{font-size:12px;color:#F5503C;text-decoration:none;font-weight:600;margin-left:auto}
+  .azioni{padding:18px 14px 40px}
+  .azioni button{width:100%;padding:14px;border:none;border-radius:14px;background:#F5503C;
+                 color:#fff;font:600 15px inherit;font-family:inherit}
+  textarea{width:100%;height:130px;margin-top:10px;padding:10px;border:1px solid #EAEAE8;
+           border-radius:12px;font:10px/1.5 'SF Mono',Menlo,monospace;background:#fff}
+  .avviso{margin:14px;padding:12px 14px;background:#FFF6E8;border:1px solid #F0DCBC;
+          border-radius:14px;font-size:13px;color:#7A5320}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Orari di apertura e chiusura</h1>
+  <p class="sub">Servono al ricalcolo della giornata: senza chiusure, l'app non può
+     dirti che alle 18 non arrivi più in tempo.</p>
+  <div class="filtri">
+    <button id="f-tutte">tutte</button>
+    <button id="f-utili" class="on">solo quelle che contano</button>
+  </div>
+</header>
+
+<div class="avviso">
+  I valori sono una <b>proposta mia</b>, non un dato ufficiale — tranne Kinkaku-ji che ho
+  verificato sul sito del tempio. Il distintivo colorato dice quanto sono affidabili.
+  Gli orari giapponesi cambiano con le stagioni: questi vanno ricontrollati vicino
+  alla partenza, e il collegamento "verifica" apre il luogo su Maps dove sono aggiornati.
+</div>
+
+<div id="lista"></div>
+
+<div class="azioni">
+  <button id="copia">Copia il risultato per Claude</button>
+  <textarea id="out" readonly></textarea>
+</div>
+
+<script>
+var T = [{"id": "s101", "day": "d1", "data": "2027-05-05", "citta": "Roma → Tokyo", "time": "14:55", "title": "Volo AZ0792 Roma → Tokyo", "cat": "transfer", "q": "Aeroporto di Roma Fiumicino", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s201", "day": "d2", "data": "2027-05-06", "citta": "Tokyo", "time": "10:25", "title": "Atterraggio a Tokyo Haneda", "cat": "transfer", "q": "Tokyo Haneda Airport", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s202", "day": "d2", "data": "2027-05-06", "citta": "Tokyo", "time": "11:30", "title": "Trasferimento in hotel (mezzi pubblici)", "cat": "transfer", "q": "Ikebukuro Station, Tokyo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s203", "day": "d2", "data": "2027-05-06", "citta": "Tokyo", "time": "14:00", "title": "Check-in Sunshine City Prince Hotel", "cat": "hotel", "q": "Sunshine City Prince Hotel, Ikebukuro, Tokyo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s204", "day": "d2", "data": "2027-05-06", "citta": "Tokyo", "time": "18:30", "title": "Passeggiata serale leggera", "cat": "experience", "q": "Ikebukuro, Tokyo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s301", "day": "d3", "data": "2027-05-07", "citta": "Tokyo", "time": "09:00", "title": "Senso-ji", "cat": "temple", "q": "Senso-ji, Asakusa, Tokyo", "tipo": "orari", "ap": "06:00", "ch": "17:00", "cf": "alta", "nota": "recinto sempre aperto, sala principale 6–17"}, {"id": "s302", "day": "d3", "data": "2027-05-07", "citta": "Tokyo", "time": "10:15", "title": "Nakamise-dori", "cat": "shopping", "q": "Nakamise-dori, Asakusa, Tokyo", "tipo": "orari", "ap": "09:30", "ch": "19:00", "cf": "media", "nota": "negozi del viale, orari indicativi"}, {"id": "s303", "day": "d3", "data": "2027-05-07", "citta": "Tokyo", "time": "11:30", "title": "Tokyo Skytree", "cat": "view", "q": "Tokyo Skytree, Tokyo", "tipo": "orari", "ap": "10:00", "ch": "22:00", "cf": "alta", "nota": "ultimo ingresso ore 21"}, {"id": "s304", "day": "d3", "data": "2027-05-07", "citta": "Tokyo", "time": "13:30", "title": "Pranzo con la guida", "cat": "food", "q": "Tokyo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s305", "day": "d3", "data": "2027-05-07", "citta": "Tokyo", "time": "15:00", "title": "Akihabara", "cat": "shopping", "q": "Akihabara, Tokyo", "tipo": "orari", "ap": "10:00", "ch": "20:00", "cf": "media", "nota": "negozi del quartiere, orari indicativi"}, {"id": "s401", "day": "d4", "data": "2027-05-08", "citta": "Tokyo", "time": "10:00", "title": "Esperienza di guida JDM (stile Fast & Furious)", "cat": "experience", "q": "Tokyo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s402", "day": "d4", "data": "2027-05-08", "citta": "Tokyo", "time": "16:00", "title": "Resto della giornata libero", "cat": "experience", "q": "Tokyo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s501", "day": "d5", "data": "2027-05-09", "citta": "Hakone", "time": "09:00", "title": "Walking Tour \\", "cat": "experience", "q": "Tokyo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s502", "day": "d5", "data": "2027-05-09", "citta": "Hakone", "time": "12:30", "title": "Spedizione bagagli Tokyo → Kyoto", "cat": "transfer", "q": "Tokyo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s503", "day": "d5", "data": "2027-05-09", "citta": "Hakone", "time": "14:00", "title": "Trasferimento a Hakone (Romance Car)", "cat": "transfer", "q": "Hakone-Yumoto Station", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s504", "day": "d5", "data": "2027-05-09", "citta": "Hakone", "time": "16:30", "title": "Check-in Aura Tachibana", "cat": "hotel", "q": "Aura Tachibana, Hakone", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s505", "day": "d5", "data": "2027-05-09", "citta": "Hakone", "time": "18:00", "title": "Cena kaiseki", "cat": "food", "q": "Hakone", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s601", "day": "d6", "data": "2027-05-10", "citta": "Kanazawa", "time": "09:00", "title": "Owakudani", "cat": "nature", "q": "Owakudani, Hakone", "tipo": "orari", "ap": "09:00", "ch": "17:00", "cf": "media", "nota": "dipende dalla funivia e dal meteo"}, {"id": "s602", "day": "d6", "data": "2027-05-10", "citta": "Kanazawa", "time": "11:30", "title": "Crociera sul Lago Ashi", "cat": "view", "q": "Lake Ashi, Hakone", "tipo": "orari", "ap": "09:30", "ch": "16:30", "cf": "media", "nota": "battello sul lago, ultima corsa nel pomeriggio"}, {"id": "s603", "day": "d6", "data": "2027-05-10", "citta": "Kanazawa", "time": "13:00", "title": "Hakone Shrine", "cat": "temple", "q": "Hakone Shrine, Hakone", "tipo": "orari", "ap": "08:30", "ch": "17:00", "cf": "media", "nota": "recinto sempre aperto, ufficio 8:30–17"}, {"id": "s604", "day": "d6", "data": "2027-05-10", "citta": "Kanazawa", "time": "15:00", "title": "Trasferimento a Kanazawa (JR)", "cat": "transfer", "q": "Kanazawa Station", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s605", "day": "d6", "data": "2027-05-10", "citta": "Kanazawa", "time": "18:30", "title": "Check-in Holiday Inn ANA Kanazawa Sky", "cat": "hotel", "q": "Holiday Inn ANA Kanazawa Sky", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s701", "day": "d7", "data": "2027-05-11", "citta": "Kyoto", "time": "09:00", "title": "Kenroku-en", "cat": "nature", "q": "Kenrokuen, Kanazawa", "tipo": "orari", "ap": "07:00", "ch": "18:00", "cf": "alta", "nota": "orario estivo, dal 1 marzo al 15 ottobre"}, {"id": "s702", "day": "d7", "data": "2027-05-11", "citta": "Kyoto", "time": "11:00", "title": "Higashi Chaya", "cat": "experience", "q": "Higashi Chaya District, Kanazawa", "tipo": "orari", "ap": "09:00", "ch": "17:00", "cf": "media", "nota": "case da tè visitabili, il quartiere no"}, {"id": "s703", "day": "d7", "data": "2027-05-11", "citta": "Kyoto", "time": "13:30", "title": "Trasferimento a Kyoto (JR)", "cat": "transfer", "q": "Kyoto Station", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s704", "day": "d7", "data": "2027-05-11", "citta": "Kyoto", "time": "16:30", "title": "Check-in Oriental Hotel Kyoto Rokujo", "cat": "hotel", "q": "Oriental Hotel Kyoto Rokujo", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s705", "day": "d7", "data": "2027-05-11", "citta": "Kyoto", "time": "19:00", "title": "Gion", "cat": "experience", "q": "Gion, Kyoto", "tipo": "sempre", "ap": "", "ch": "", "cf": "alta", "nota": "quartiere, sempre percorribile"}, {"id": "s801", "day": "d8", "data": "2027-05-12", "citta": "Kyoto", "time": "09:00", "title": "Kinkaku-ji", "cat": "temple", "q": "Kinkaku-ji, Kyoto", "tipo": "orari", "ap": "09:00", "ch": "17:00", "cf": "ok", "nota": "verificato sul sito ufficiale del tempio"}, {"id": "s802", "day": "d8", "data": "2027-05-12", "citta": "Kyoto", "time": "11:00", "title": "Arashiyama Bamboo Grove", "cat": "nature", "q": "Arashiyama Bamboo Grove, Kyoto", "tipo": "sempre", "ap": "", "ch": "", "cf": "alta", "nota": "sentiero all'aperto, sempre accessibile"}, {"id": "s803", "day": "d8", "data": "2027-05-12", "citta": "Kyoto", "time": "12:30", "title": "Pranzo ad Arashiyama", "cat": "food", "q": "Arashiyama, Kyoto", "tipo": "sempre", "ap": "", "ch": "", "cf": "alta", "nota": "quartiere"}, {"id": "s804", "day": "d8", "data": "2027-05-12", "citta": "Kyoto", "time": "15:00", "title": "Nishiki Market", "cat": "food", "q": "Nishiki Market, Kyoto", "tipo": "orari", "ap": "09:00", "ch": "18:00", "cf": "media", "nota": "mercato coperto, molti banchi chiudono prima"}, {"id": "s900", "day": "d9", "data": "2027-05-13", "citta": "Kyoto", "time": "08:00", "title": "Attivazione Kansai-Hiroshima Area Pass", "cat": "transfer", "q": "Kyoto Station", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s901", "day": "d9", "data": "2027-05-13", "citta": "Kyoto", "time": "08:30", "title": "Kiyomizu-dera", "cat": "temple", "q": "Kiyomizu-dera, Kyoto", "tipo": "orari", "ap": "06:00", "ch": "18:00", "cf": "alta", "nota": "apre molto presto, ottimo per evitare la folla"}, {"id": "s902", "day": "d9", "data": "2027-05-13", "citta": "Kyoto", "time": "10:15", "title": "Higashiyama & Sannen-zaka", "cat": "shopping", "q": "Sannenzaka, Kyoto", "tipo": "orari", "ap": "09:00", "ch": "18:00", "cf": "media", "nota": "la salita è sempre percorribile, i negozi no"}, {"id": "s903", "day": "d9", "data": "2027-05-13", "citta": "Kyoto", "time": "13:00", "title": "Fushimi Inari Taisha & Nara (Todai-ji, Kasuga Taisha)", "cat": "experience", "q": "Fushimi Inari Taisha, Kyoto", "tipo": "sempre", "ap": "", "ch": "", "cf": "alta", "nota": "santuario sempre aperto, ufficio 8:30–16:30"}, {"id": "s1001", "day": "d10", "data": "2027-05-14", "citta": "Hiroshima", "time": "08:30", "title": "Checkout & spedizione bagagli", "cat": "transfer", "q": "Kyoto Station", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1002", "day": "d10", "data": "2027-05-14", "citta": "Hiroshima", "time": "10:00", "title": "Trasferimento a Hiroshima (Shinkansen)", "cat": "transfer", "q": "Hiroshima Station", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1003", "day": "d10", "data": "2027-05-14", "citta": "Hiroshima", "time": "13:00", "title": "Check-in Granvia Hiroshima", "cat": "hotel", "q": "Granvia Hiroshima", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1004", "day": "d10", "data": "2027-05-14", "citta": "Hiroshima", "time": "15:30", "title": "Pomeriggio libero", "cat": "experience", "q": "Hiroshima", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1101", "day": "d11", "data": "2027-05-15", "citta": "Miyajima", "time": "09:00", "title": "Peace Memorial Park & Museo", "cat": "experience", "q": "Hiroshima Peace Memorial Park", "tipo": "orari", "ap": "08:30", "ch": "18:00", "cf": "media", "nota": "parco sempre aperto, il museo no"}, {"id": "s1102", "day": "d11", "data": "2027-05-15", "citta": "Miyajima", "time": "13:30", "title": "Traghetto per Miyajima", "cat": "transfer", "q": "Miyajima Ferry Terminal", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1103", "day": "d11", "data": "2027-05-15", "citta": "Miyajima", "time": "14:30", "title": "Santuario di Itsukushima", "cat": "temple", "q": "Itsukushima Shrine, Miyajima", "tipo": "orari", "ap": "06:30", "ch": "18:00", "cf": "alta", "nota": "controllare anche la marea per il torii"}, {"id": "s1104", "day": "d11", "data": "2027-05-15", "citta": "Miyajima", "time": "17:00", "title": "Check-in ryokan Iwaso", "cat": "hotel", "q": "Iwaso Ryokan, Miyajima", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1201", "day": "d12", "data": "2027-05-16", "citta": "Miyajima", "time": "09:30", "title": "Passeggiata sull'isola e cervi", "cat": "nature", "q": "Miyajima Island", "tipo": "sempre", "ap": "", "ch": "", "cf": "alta", "nota": "isola"}, {"id": "s1202", "day": "d12", "data": "2027-05-16", "citta": "Miyajima", "time": "14:00", "title": "Giornata libera, senza programma", "cat": "experience", "q": "Miyajima Island", "tipo": "sempre", "ap": "", "ch": "", "cf": "alta", "nota": "isola"}, {"id": "s1301", "day": "d13", "data": "2027-05-17", "citta": "Osaka", "time": "10:00", "title": "Trasferimento a Osaka", "cat": "transfer", "q": "Osaka Station", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1302", "day": "d13", "data": "2027-05-17", "citta": "Osaka", "time": "14:00", "title": "Check-in Moxy Osaka Honmachi by Marriott", "cat": "hotel", "q": "Moxy Osaka Honmachi by Marriott", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1303", "day": "d13", "data": "2027-05-17", "citta": "Osaka", "time": "17:00", "title": "Shinsekai", "cat": "experience", "q": "Shinsekai, Osaka", "tipo": "sempre", "ap": "", "ch": "", "cf": "alta", "nota": "quartiere"}, {"id": "s1304", "day": "d13", "data": "2027-05-17", "citta": "Osaka", "time": "19:30", "title": "Dotonbori", "cat": "food", "q": "Dotonbori, Osaka", "tipo": "sempre", "ap": "", "ch": "", "cf": "alta", "nota": "quartiere, di sera è il bello"}, {"id": "s1401", "day": "d14", "data": "2027-05-18", "citta": "Osaka → Roma", "time": "06:30", "title": "Checkout & trasferimento a Kansai Airport", "cat": "transfer", "q": "Kansai International Airport", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1402", "day": "d14", "data": "2027-05-18", "citta": "Osaka → Roma", "time": "09:20", "title": "Volo interno Osaka → Tokyo Haneda", "cat": "transfer", "q": "Kansai International Airport", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}, {"id": "s1403", "day": "d14", "data": "2027-05-18", "citta": "Osaka → Roma", "time": "12:45", "title": "Volo Tokyo Haneda → Roma Fiumicino", "cat": "transfer", "q": "Tokyo Haneda Airport", "tipo": "nd", "ap": "", "ch": "", "cf": "", "nota": ""}];
+var soloUtili = true;
+
+var ETICHETTA = {ok:'VERIFICATO', alta:'ATTENDIBILE', media:'DA CONTROLLARE'};
+
+function disegna(){
+  var c = document.getElementById('lista');
+  c.innerHTML = '';
+  var ultimoGiorno = null;
+  T.forEach(function(s, i){
+    if (soloUtili && s.tipo === 'nd') return;
+    if (s.day !== ultimoGiorno){
+      ultimoGiorno = s.day;
+      var g = document.createElement('div');
+      g.className = 'giorno';
+      g.textContent = s.data + ' · ' + s.citta;
+      c.appendChild(g);
+    }
+    var d = document.createElement('div');
+    d.className = 't' + (s.tipo === 'nd' ? ' nd' : '');
+    var badge = s.cf ? '<span class="badge b-' + s.cf + '">' + ETICHETTA[s.cf] + '</span>' : '';
+    d.innerHTML =
+      '<div class="cap"><div class="ora">' + s.time + '</div>' +
+      '<div class="tit">' + s.title + '</div>' + badge + '</div>' +
+      (s.nota ? '<div class="nota">' + s.nota + '</div>' : '') +
+      '<div class="riga2">' +
+        '<select data-i="' + i + '" class="tipo">' +
+          '<option value="orari">ha orari</option>' +
+          '<option value="sempre">sempre aperto</option>' +
+          '<option value="nd">non serve</option>' +
+        '</select>' +
+        '<input type="time" class="ap" data-i="' + i + '" value="' + s.ap + '">' +
+        '<input type="time" class="ch" data-i="' + i + '" value="' + s.ch + '">' +
+        '<a target="_blank" rel="noopener" href="https://www.google.com/maps/search/?api=1&query=' +
+          encodeURIComponent(s.q) + '">verifica ›</a>' +
+      '</div>';
+    d.querySelector('.tipo').value = s.tipo;
+    c.appendChild(d);
+  });
+  agganciaEventi();
+  aggiornaUscita();
+}
+
+function agganciaEventi(){
+  document.querySelectorAll('.tipo').forEach(function(el){
+    el.onchange = function(){
+      T[+el.dataset.i].tipo = el.value; T[+el.dataset.i].cf = ''; disegna();
+    };
+  });
+  document.querySelectorAll('.ap').forEach(function(el){
+    el.onchange = function(){ T[+el.dataset.i].ap = el.value; T[+el.dataset.i].cf=''; aggiornaUscita(); };
+  });
+  document.querySelectorAll('.ch').forEach(function(el){
+    el.onchange = function(){ T[+el.dataset.i].ch = el.value; T[+el.dataset.i].cf=''; aggiornaUscita(); };
+  });
+}
+
+function aggiornaUscita(){
+  document.getElementById('out').value = JSON.stringify(
+    T.filter(function(s){ return s.tipo !== 'nd'; })
+     .map(function(s){ return {id:s.id, tipo:s.tipo, ap:s.ap, ch:s.ch}; }));
+}
+
+document.getElementById('f-tutte').onclick = function(){
+  soloUtili = false; this.className='on';
+  document.getElementById('f-utili').className=''; disegna();
+};
+document.getElementById('f-utili').onclick = function(){
+  soloUtili = true; this.className='on';
+  document.getElementById('f-tutte').className=''; disegna();
+};
+document.getElementById('copia').onclick = function(){
+  var t = document.getElementById('out'); t.select();
+  try { document.execCommand('copy'); this.textContent = 'copiato'; } catch(e){}
+};
+
+disegna();
+</script>
+</body>
+</html>
