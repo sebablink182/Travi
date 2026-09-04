@@ -259,11 +259,66 @@ import {
   function tIconFor(m) { return '<svg><use href="#' + transp(m).icon + '"/></svg>'; }
   function imgFor(s) { return (s && s.img) ? "assets/img/" + s.img + ".jpg" : ""; }
 
+  /* ---------- stato della giornata ----------
+     Il pannello compare SOLO nel giorno in cui vi trovate davvero: in un giorno
+     futuro dire "sei in ritardo" non vuol dire niente, e in uno passato nemmeno.
+     Tutto il calcolo sta in js/giornata.js, qui c'è solo il disegno. */
+  var ETICHETTA = { chiusa: "NON CI ARRIVI", incompleta: "TROPPO POCO", stretta: "PER UN PELO" };
+
+  function renderStatoGiornata(dayId, list) {
+    var box = document.getElementById("stato-giornata");
+    if (!box) return;
+    box.innerHTML = "";
+    var d = dayById(dayId);
+    if (!d || d.date !== todayISO() || !window.Giornata) return; // solo oggi
+
+    var ora = new Date();
+    var e = window.Giornata.calcola(list, ora.getHours() * 60 + ora.getMinutes(), window.TRAVI_ORARI);
+    if (e.stato === "finita") return;
+
+    var inRitardo = e.ritardo > 15;
+    var titolo;
+    if (e.stato === "non-iniziata") titolo = "La giornata non è ancora cominciata";
+    else if (inRitardo) titolo = "In ritardo di " + e.ritardo + " min";
+    else if (e.ritardo < -15) titolo = "In anticipo di " + Math.abs(e.ritardo) + " min";
+    else titolo = "In orario";
+
+    var html = '<div class="stato-g ' + (e.problemi.length ? "tardi" : (inRitardo ? "" : "bene")) + '">' +
+      '<div class="cap"><div class="titolo">' + titolo + "</div>" +
+      '<div class="fine">fine prevista ' + e.finePrevista + "</div></div>";
+
+    // Solo le tappe che restano, e solo quelle che meritano una riga: le prime
+    // due comunque, più tutte quelle con un problema. Un elenco lungo qui
+    // diventerebbe una seconda lista sopra la lista.
+    e.previsioni.forEach(function (p, i) {
+      if (i > 1 && p.verdetto === "ok") return;
+      var eti = ETICHETTA[p.verdetto]
+        ? '<div class="esito e-' + p.verdetto + '">' + ETICHETTA[p.verdetto] + "</div>" : "";
+      html += '<div class="riga"><div class="ora">' + p.arrivoOra + "</div>" +
+              '<div class="che">' + escapeHtml(p.title) +
+              (p.chiudeOra ? ' <span style="color:var(--text-muted)">· chiude ' + p.chiudeOra + "</span>" : "") +
+              "</div>" + eti + "</div>";
+    });
+
+    var sug = e.suggerimento;
+    if (sug && sug.tipo === "sacrifica") {
+      html += '<div class="consiglio">Se rinunciate a <b>' + escapeHtml(sug.titolo) + "</b> (" +
+              sug.durata + " min) riuscite ancora a fare <b>" +
+              sug.problemiRisolti.map(escapeHtml).join("</b>, <b>") + "</b>.</div>";
+    } else if (sug && sug.tipo === "rinuncia") {
+      html += '<div class="consiglio">Non c\'è più niente da tagliare che basti: <b>' +
+              sug.perse.map(escapeHtml).join("</b> e <b>") +
+              "</b> conviene spostarli a un altro giorno.</div>";
+    }
+    box.innerHTML = html + "</div>";
+  }
+
   function renderItinerario() {
     if (!DAYS.length || !selectedDay.itinerario) return;
     document.getElementById("itin-city").textContent = dayById(selectedDay.itinerario).city;
     document.getElementById("itin-theme").textContent = dayById(selectedDay.itinerario).theme;
     var list = stopsForDay(selectedDay.itinerario);
+    renderStatoGiornata(selectedDay.itinerario, list);
     var el = document.getElementById("stoplist");
     el.innerHTML = "";
     list.forEach(function (s) {

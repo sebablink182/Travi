@@ -1,0 +1,168 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Prova la giornata</title>
+<style>
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  body{font:400 15px/1.45 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+       background:#FAFAF9;color:#1C1C1E;padding-bottom:50px}
+  header{padding:calc(env(safe-area-inset-top) + 12px) 14px 12px;background:#fff;
+         border-bottom:1px solid #EAEAE8;position:sticky;top:0;z-index:10}
+  h1{font-size:17px;font-weight:600}
+  p.sub{font-size:13px;color:#8E8E93;margin-top:3px}
+  select{width:100%;margin-top:10px;padding:10px;border:1px solid #EAEAE8;border-radius:11px;
+         font:15px inherit;font-family:inherit;background:#FAFAF9}
+  .orologio{display:flex;align-items:center;gap:11px;margin-top:10px}
+  .orologio b{flex:none;font:700 26px/1 inherit;width:80px;font-variant-numeric:tabular-nums}
+  .orologio input{flex:1;accent-color:#F5503C}
+
+  .pannello{margin:14px;padding:15px 16px;border-radius:20px;background:#fff;
+            border:1px solid #EAEAE8;box-shadow:0 1px 2px rgba(20,20,20,.04),0 8px 20px rgba(20,20,20,.06)}
+  .pannello.tardi{border-color:#F0C9C2;background:linear-gradient(180deg,#FFF6F4,#fff 60%)}
+  .pannello.bene{border-color:#CFE6D8;background:linear-gradient(180deg,#F4FBF6,#fff 60%)}
+  .cap{display:flex;align-items:baseline;gap:8px}
+  .cap .titolo{font:600 17px/22px inherit;flex:1}
+  .cap .fine{font-size:12px;color:#8E8E93;font-variant-numeric:tabular-nums}
+  .riga{display:flex;align-items:center;gap:9px;margin-top:9px;padding-top:9px;
+        border-top:1px solid #EAEAE8;font-size:13px}
+  .ora{flex:none;width:52px;font-weight:700;font-variant-numeric:tabular-nums}
+  .che{flex:1;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .esito{flex:none;font-size:10px;font-weight:700;padding:2px 7px;border-radius:99px}
+  .e-chiusa{background:#FBE3DE;color:#A3341F}
+  .e-incompleta{background:#FCEEDB;color:#8A5A18}
+  .e-stretta{background:#FCF6DB;color:#7A6318}
+  .consiglio{margin-top:11px;padding:11px 12px;border-radius:14px;background:#F2F2F1;font-size:13px}
+
+  .tappe{margin:14px}
+  .tappe h2{font-size:13px;color:#8E8E93;text-transform:uppercase;letter-spacing:.05em;margin-bottom:8px}
+  .tap{display:flex;align-items:center;gap:10px;background:#fff;border:1px solid #EAEAE8;
+       border-radius:14px;padding:11px 13px;margin-bottom:7px}
+  .tap.fatta{opacity:.45}
+  .tap .h{flex:none;font:600 13px inherit;color:#8E8E93;width:44px;font-variant-numeric:tabular-nums}
+  .tap .n{flex:1;min-width:0;font-size:14px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .tap .segno{flex:none;width:26px;height:26px;border-radius:8px;border:1.5px solid #D8D8DA;
+              display:flex;align-items:center;justify-content:center;font-size:14px;color:#4CAF6C}
+  .tap.fatta .segno{background:#4CAF6C;border-color:#4CAF6C;color:#fff}
+  .nota{margin:0 14px;padding:12px 14px;background:#FFF6E8;border:1px solid #F0DCBC;
+        border-radius:14px;font-size:13px;color:#7A5320}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Prova la giornata</h1>
+  <p class="sub">Il viaggio è fra otto mesi: qui si può far finta che sia già in corso,
+     scegliere un giorno, spostare l'orologio e segnare le tappe fatte.</p>
+  <select id="giorno"></select>
+  <div class="orologio">
+    <b id="ora">14:00</b>
+    <input type="range" id="slider" min="300" max="1380" step="5" value="840">
+  </div>
+</header>
+
+<div id="out"></div>
+
+<div class="tappe">
+  <h2>Tocca una tappa per segnarla come fatta</h2>
+  <div id="lista"></div>
+</div>
+
+<div class="nota">
+  Questa pagina usa <b>esattamente lo stesso motore</b> dell'app
+  (<code>js/giornata.js</code>): quello che vedi qui è quello che succederà davvero
+  in Giappone. Se qualcosa non torna, è qui che si scopre — non a maggio.
+</div>
+
+<script src="seed-data.local.js"></script>
+<script src="js/coords.js"></script>
+<script src="js/orari.js"></script>
+<script src="js/giornata.js"></script>
+<script>
+(function(){
+  var T = window.SEED_TRIP, C = window.TRAVI_COORDS || {};
+  var STOPS = T.stops.map(function(s){
+    var c = C[s.id];
+    return Object.assign({}, s, c ? {lat:c[0], lon:c[1]} : {}, {done:false});
+  });
+  var fatte = {};
+  var giornoSel = "d3";
+
+  var selG = document.getElementById("giorno");
+  T.days.forEach(function(d){
+    var n = STOPS.filter(function(s){ return s.day === d.id; }).length;
+    var o = document.createElement("option");
+    o.value = d.id;
+    o.textContent = d.date.slice(8) + "/" + d.date.slice(5,7) + " · " + d.city + "  (" + n + " tappe)";
+    selG.appendChild(o);
+  });
+  selG.value = giornoSel;
+
+  var ETICHETTA = {chiusa:"NON CI ARRIVI", incompleta:"TROPPO POCO", stretta:"PER UN PELO"};
+
+  function tappeDelGiorno(){
+    return STOPS.filter(function(s){ return s.day === giornoSel; })
+                .map(function(s){ return Object.assign({}, s, {done: !!fatte[s.id]}); });
+  }
+
+  function disegna(){
+    var minuti = +document.getElementById("slider").value;
+    document.getElementById("ora").textContent =
+      String(Math.floor(minuti/60)).padStart(2,"0") + ":" + String(minuti%60).padStart(2,"0");
+
+    var list = tappeDelGiorno();
+    var e = window.Giornata.calcola(list, minuti, window.TRAVI_ORARI);
+    var out = document.getElementById("out");
+
+    if (e.stato === "finita"){
+      out.innerHTML = '<div class="pannello bene"><div class="cap"><div class="titolo">' +
+        'Giornata completata</div></div></div>';
+    } else {
+      var inRitardo = e.ritardo > 15;
+      var titolo = e.stato === "non-iniziata" ? "La giornata non è ancora cominciata"
+        : inRitardo ? "In ritardo di " + e.ritardo + " min"
+        : e.ritardo < -15 ? "In anticipo di " + Math.abs(e.ritardo) + " min" : "In orario";
+
+      var h = '<div class="pannello ' + (e.problemi.length ? "tardi" : (inRitardo ? "" : "bene")) + '">' +
+        '<div class="cap"><div class="titolo">' + titolo + '</div>' +
+        '<div class="fine">fine prevista ' + e.finePrevista + '</div></div>';
+
+      e.previsioni.forEach(function(p, i){
+        if (i > 1 && p.verdetto === "ok") return;
+        var eti = ETICHETTA[p.verdetto] ? '<div class="esito e-'+p.verdetto+'">'+ETICHETTA[p.verdetto]+'</div>' : '';
+        h += '<div class="riga"><div class="ora">' + p.arrivoOra + '</div><div class="che">' +
+             p.title + (p.chiudeOra ? ' <span style="color:#8E8E93">· chiude '+p.chiudeOra+'</span>' : '') +
+             '</div>' + eti + '</div>';
+      });
+
+      var s = e.suggerimento;
+      if (s && s.tipo === "sacrifica"){
+        h += '<div class="consiglio">Se rinunciate a <b>' + s.titolo + '</b> (' + s.durata +
+             ' min) riuscite ancora a fare <b>' + s.problemiRisolti.join('</b>, <b>') + '</b>.</div>';
+      } else if (s && s.tipo === "rinuncia"){
+        h += '<div class="consiglio">Non c\'è più niente da tagliare che basti: <b>' +
+             s.perse.join('</b> e <b>') + '</b> conviene spostarli a un altro giorno.</div>';
+      }
+      out.innerHTML = h + '</div>';
+    }
+
+    var c = document.getElementById("lista");
+    c.innerHTML = "";
+    list.forEach(function(s){
+      var d = document.createElement("div");
+      d.className = "tap" + (s.done ? " fatta" : "");
+      d.innerHTML = '<div class="h">' + s.time + '</div><div class="n">' + s.title +
+                    '</div><div class="segno">' + (s.done ? "✓" : "") + '</div>';
+      d.onclick = function(){ fatte[s.id] = !fatte[s.id]; disegna(); };
+      c.appendChild(d);
+    });
+  }
+
+  selG.onchange = function(){ giornoSel = this.value; fatte = {}; disegna(); };
+  document.getElementById("slider").oninput = disegna;
+  disegna();
+})();
+</script>
+</body>
+</html>

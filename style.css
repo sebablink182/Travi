@@ -620,3 +620,32 @@
   .login-note{ text-align:center; font-size:.7rem; color:var(--text-muted); margin-top:16px; line-height:1.4; }
   [hidden]{ display:none !important; }
   .signout-link{ display:block; text-align:center; font-size:.75rem; color:var(--text-muted); margin:6px 0 90px; cursor:pointer; text-decoration:underline; text-underline-offset:2px; }
+
+  /* ---------- stato della giornata ---------- */
+  /* Il pannello che dice se si sta rispettando il piano. Compare solo nel
+     giorno in cui vi trovate: negli altri non avrebbe senso. */
+  .stato-g{
+    margin: 12px 16px 0; padding: 14px 16px; border-radius: var(--r-lg);
+    background: var(--surface); border:1px solid var(--border); box-shadow: var(--shadow-1);
+  }
+  .stato-g.tardi{ border-color:#F0C9C2; background: linear-gradient(180deg,#FFF6F4,var(--surface) 60%); }
+  .stato-g.bene{ border-color:#CFE6D8; background: linear-gradient(180deg,#F4FBF6,var(--surface) 60%); }
+  .stato-g .cap{ display:flex; align-items:baseline; gap:8px; }
+  .stato-g .titolo{ font: var(--t-title2); flex:1; }
+  .stato-g .fine{ font-size:12px; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+  .stato-g .riga{
+    display:flex; align-items:center; gap:9px; margin-top:9px; padding-top:9px;
+    border-top:1px solid var(--border); font-size:13px;
+  }
+  .stato-g .riga:first-of-type{ border-top:none; }
+  .stato-g .ora{ flex:none; width:46px; font-weight:700; font-variant-numeric:tabular-nums; }
+  .stato-g .che{ flex:1; min-width:0; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+  .stato-g .esito{ flex:none; font-size:11px; font-weight:700; padding:2px 7px; border-radius:99px; }
+  .e-chiusa{ background:#FBE3DE; color:#A3341F; }
+  .e-incompleta{ background:#FCEEDB; color:#8A5A18; }
+  .e-stretta{ background:#FCF6DB; color:#7A6318; }
+  .stato-g .consiglio{
+    margin-top:11px; padding:10px 12px; border-radius:var(--r-md);
+    background: var(--surface-2); font-size:13px; line-height:1.45;
+  }
+  .stato-g .consiglio b{ font-weight:600; }
