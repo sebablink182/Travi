@@ -673,11 +673,14 @@
     overflow:hidden; /* niente può uscire di lato dal foglio */
   }
   .sheet.show{ transform: translate(-50%, 0); }
-  .sheet-grip{ width:36px; height:4px; background:var(--border); border-radius:99px; margin:10px auto 0; }
+  /* Non è più solo un ornamento: è la maniglia da cui si tira giù il foglio
+     per chiuderlo (vedi rendiTrascinabile in js/app.js). */
+  .sheet-grip{ width:40px; height:5px; background:var(--text-faint); border-radius:99px; margin:9px auto 0; opacity:.6; }
   .sheet-head{ display:flex; justify-content:space-between; align-items:center; padding:12px 18px 4px; }
   .sheet-head .x{ background:var(--surface-2); border:none; width:30px; height:30px; border-radius:50%; color:var(--text-muted); cursor:pointer; font-size:15px; line-height:1; }
   .sheet-body{
     flex:1; min-height:0;
+    touch-action: pan-y; /* solo su e giù: il foglio non si trascina di lato */
     overflow-y:auto;
     overflow-x:hidden;  /* NIENTE trascinamento laterale: è la cosa che faceva
        sembrare il foglio una pagina web invece di un'app, e che tagliava i

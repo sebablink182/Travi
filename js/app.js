@@ -308,6 +308,9 @@ import {
        un interruttore di sistema vero, invisibile, steso sopra la pillola: il
        dito tocca lui, iOS fa il tick, e il nostro click continua a funzionare
        normalmente perché l'evento sale comunque alla pillola.
+     VERIFICATO SUL TELEFONO DI SEB (4/09/2026): funziona, sia in Safari sia
+     nella PWA installata sulla schermata Home. Era il punto che nessuna fonte
+     documentava — ora lo sappiamo.
      Se Apple chiudesse anche questa, o su un iPhone più vecchio, semplicemente
      non si sente niente: nessun errore, nessun comportamento diverso. */
   function stendiInterruttoreAptico(el) {
@@ -986,13 +989,95 @@ import {
     return sel ? sel.dataset.id : null;
   }
 
-  // Con un foglio aperto, il dito che scorreva sopra il foglio faceva scorrere
-  // la PAGINA SOTTO invece del foglio: iOS passa il gesto al contenitore
-  // sottostante quando il contenuto del foglio non ha niente da scorrere.
-  // Finché un foglio è aperto, la vista sotto resta ferma.
+  /* ---------- fogli: sfondo fermo e chiusura col trascinamento ----------
+     Con un foglio aperto il dito che scorreva sopra il foglio faceva scorrere
+     la PAGINA SOTTO: iOS, quando il contenuto sotto il dito non ha niente da
+     scorrere, passa il gesto al primo contenitore scorrevole che trova
+     salendo. Mettere overflow:hidden sulla vista non bastava, perché il foglio
+     è position:fixed e quindi fuori da quella vista.
+     Qui si fa la cosa giusta: finché un foglio è aperto, ogni trascinamento
+     che non sia dentro una zona che può DAVVERO scorrere viene fermato. */
+  var foglioAperto = false;
+
   function bloccaSfondo(bloccato) {
+    foglioAperto = bloccato;
     document.querySelectorAll(".scroll").forEach(function (el) {
       el.style.overflowY = bloccato ? "hidden" : "auto";
+    });
+  }
+
+  // Risale dal punto toccato cercando un contenitore che possa scorrere per
+  // davvero (ha contenuto in eccesso ED è impostato per scorrere).
+  function trovaScorrevole(el, limite) {
+    while (el && el !== limite && el !== document.body) {
+      if (el.scrollHeight > el.clientHeight + 1) {
+        var ov = getComputedStyle(el).overflowY;
+        if (ov === "auto" || ov === "scroll") return el;
+      }
+      el = el.parentElement;
+    }
+    return null;
+  }
+
+  document.addEventListener("touchmove", function (e) {
+    if (!foglioAperto) return;
+    if (trovaScorrevole(e.target, null)) return; // può scorrere: lascialo fare
+    e.preventDefault();                          // altrimenti non si muove niente
+  }, { passive: false });
+
+  /* Chiusura col trascinamento verso il basso.
+     Il foglio segue il dito, lo sfondo scuro si schiarisce man mano: si vede
+     che si sta "tirando giù la tendina". Lasciandolo prima di metà strada
+     torna su da solo, oltre la soglia scivola via e si chiude. Verso l'alto
+     resiste e si ferma quasi subito, come i fogli di sistema.
+     Si trascina solo se il contenuto è già in cima: se il foglio è più lungo
+     dello schermo, il primo gesto verso il basso lo riporta in cima, e solo
+     il successivo lo chiude — come ci si aspetta su iPhone. */
+  var SOGLIA_CHIUSURA = 120;
+
+  function rendiTrascinabile(sheet, chiudi) {
+    var y0 = 0, dy = 0, trascina = false;
+
+    sheet.addEventListener("touchstart", function (e) {
+      if (e.touches.length !== 1) { trascina = false; return; }
+      // dai controlli di sistema (orario, campi di testo) non si trascina
+      if (e.target.closest && e.target.closest("input, textarea, select")) { trascina = false; return; }
+      var zona = trovaScorrevole(e.target, sheet.parentElement);
+      trascina = !zona || zona.scrollTop <= 0;
+      y0 = e.touches[0].clientY;
+      dy = 0;
+      sheet.style.transition = "none";
+      backdrop.style.transition = "none"; // deve seguire il dito, non arrivare dopo
+    }, { passive: true });
+
+    sheet.addEventListener("touchmove", function (e) {
+      if (!trascina || e.touches.length !== 1) return;
+      dy = e.touches[0].clientY - y0;
+      if (dy < 0) dy = Math.max(-40, dy / 4); // in su: resistenza, va quasi a zero
+      if (dy > 0) e.preventDefault();
+      sheet.style.transform = "translate(-50%, " + dy + "px)";
+      var quanto = Math.min(1, Math.max(0, dy / 300));
+      backdrop.style.opacity = String(1 - quanto * 0.9);
+    }, { passive: false });
+
+    ["touchend", "touchcancel"].forEach(function (ev) {
+      sheet.addEventListener(ev, function () {
+        if (!trascina) return;
+        trascina = false;
+        sheet.style.transition = "";
+        backdrop.style.transition = "";
+        if (dy > SOGLIA_CHIUSURA) {
+          // scivola via fino in fondo e poi chiude, senza scatti
+          sheet.style.transform = "translate(-50%, 100%)";
+          backdrop.style.opacity = "";
+          chiudi();
+          setTimeout(function () { sheet.style.transform = ""; }, 320);
+        } else {
+          sheet.style.transform = "";   // torna al suo posto con la transizione
+          backdrop.style.opacity = "";
+        }
+        dy = 0;
+      });
     });
   }
 
@@ -1092,6 +1177,7 @@ import {
     document.getElementById("altro-body").hidden = true;
     document.getElementById("altro-toggle").classList.remove("open");
 
+    sheet.style.transform = "";
     backdrop.classList.add("show");
     sheet.classList.add("show");
     bloccaSfondo(true);
@@ -1230,6 +1316,7 @@ import {
     selectPick("fav-category", "experience");
     selectPick("fav-priorita", "norm");
     favLatLon = null;
+    favSheet.style.transform = "";
     backdrop.classList.add("show");
     favSheet.classList.add("show");
     bloccaSfondo(true);
@@ -1308,6 +1395,7 @@ import {
       ? window.Giornata.giorniAlternativi(tappaFinta, giorni, "__nessuno__", window.TRAVI_ORARI, null)
       : [];
     renderAssignBody(fav, suggeriti);
+    assignSheet.style.transform = "";
     backdrop.classList.add("show");
     assignSheet.classList.add("show");
     bloccaSfondo(true);
@@ -1428,6 +1516,7 @@ import {
     bgWhoEl.appendChild(p);
   });
   function openBudgetSheet() {
+    budgetSheet.style.transform = "";
     backdrop.classList.add("show");
     budgetSheet.classList.add("show");
     bloccaSfondo(true);
@@ -1555,6 +1644,13 @@ import {
     toast("Giornata ricalcolata");
     persist();
   });
+
+  // Tutti i fogli dell'app si chiudono col trascinamento verso il basso, non
+  // solo con la ✕ in alto a destra.
+  rendiTrascinabile(sheet, closeSheet);
+  rendiTrascinabile(favSheet, closeFavSheet);
+  rendiTrascinabile(assignSheet, closeAssignSheet);
+  rendiTrascinabile(budgetSheet, closeBudgetSheet);
 
   /* ---------- toast ---------- */
   var toastTimer = null;
