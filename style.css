@@ -448,6 +448,7 @@
      variante giusta per il fondo. La pillola attiva resta piena d'accento,
      come il tab attivo nella barra di navigazione. */
   .daypill{
+    position:relative; overflow:hidden; /* per l'interruttore aptico steso sopra */
     flex:none; width:54px; padding:9px 0 8px; border-radius: var(--r-pill);
     background: var(--vetro-bg);
     backdrop-filter: var(--vetro-filtro);
@@ -956,10 +957,14 @@
     padding:11px 12px; font-family:inherit; font-size:.92rem; color:var(--text); margin-bottom:12px;
   }
 
-  /* Interruttore invisibile: unico modo per ottenere un feedback aptico da una
-     web app su iOS (vedi la nota in js/app.js). Deve restare "disegnato" —
-     display:none lo renderebbe inerte — quindi sta fuori schermo. */
-  #haptic-switch, #haptic-label{
-    position:fixed; left:-9999px; bottom:0; width:1px; height:1px;
-    opacity:0; pointer-events:none;
+  /* APTICO — vedi la nota lunga in js/app.js.
+     Un vero interruttore di sistema, invisibile, steso sopra la pillola del
+     giorno: il dito tocca LUI, e iOS suona il suo "tick". Non deve avere
+     appearance:none, altrimenti smette di essere un controllo di sistema e
+     l'aptico non parte: si rende solo trasparente e si ritaglia sulla forma
+     della pillola. */
+  .tocco{
+    position:absolute; inset:0; width:100%; height:100%; margin:0; padding:0;
+    opacity:0; cursor:pointer;
+    clip-path: inset(0 round 999px);
   }

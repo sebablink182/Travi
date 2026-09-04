@@ -290,39 +290,35 @@ import {
   function minToTime(m) { m = ((m % 1440) + 1440) % 1440; var h = Math.floor(m / 60), mm = m % 60; return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
 
   /* ---------- feedback aptico ----------
-     iOS non espone nessuna API di vibrazione alle app web: navigator.vibrate
-     esiste su Android, non su Safari. L'unica strada praticabile è l'inganno
-     dell'interruttore nascosto (vedi index.html): da iOS 17.4 un
-     <input type="checkbox" switch> fa un piccolo tocco aptico di sistema
-     quando cambia stato. Qui si prova prima la via ufficiale e poi quella —
-     se nessuna delle due è disponibile non succede niente e non si rompe nulla.
-     Il colpo è volutamente cortissimo (7ms) e non può ripetersi più di ~18
-     volte al secondo: deve essere un accenno, non una vibrazione. */
-  var hapticLabel = document.getElementById("haptic-label");
-  var ultimoTic = 0;
-  function tic() {
-    var ora = Date.now();
-    if (ora - ultimoTic < 55) return;
-    ultimoTic = ora;
-    try { if (navigator.vibrate) navigator.vibrate(7); } catch (e) {}
-    try { if (hapticLabel) hapticLabel.click(); } catch (e) {}
-  }
+     RICERCA FATTA IL 4/09/2026, per non riprovarci a vuoto fra sei mesi:
 
-  // Un tocco ogni volta che scorrendo si passa da un giorno al successivo:
-  // il dito sente i giorni "scattare" invece di scivolare su niente.
-  function agganciaTicGiorni(el) {
-    if (!el) return;
-    var ultimoIndice = null;
-    el.addEventListener("scroll", function () {
-      var pill = el.querySelector(".daypill");
-      if (!pill) return;
-      var passo = pill.offsetWidth + 8; // larghezza pillola + gap (vedi .dayrow)
-      var i = Math.round(el.scrollLeft / passo);
-      if (ultimoIndice === null) { ultimoIndice = i; return; }
-      if (i !== ultimoIndice) { ultimoIndice = i; tic(); }
-    }, { passive: true });
+     1. navigator.vibrate NON esiste su Safari iOS. Mai implementata, nemmeno
+        nelle versioni 26.x (caniuse.com/vibration). Su Android sì.
+     2. L'unico appiglio è <input type="checkbox" switch> (Safari 17.4+): è un
+        controllo di SISTEMA, e iOS suona il suo "tick" quando cambia stato.
+     3. Fino a iOS 26.4 lo si poteva far scattare da codice (.click() su una
+        label nascosta) — è la strada che avevo provato, e che infatti non ha
+        prodotto niente: **Apple l'ha chiusa in iOS 26.5**. Da lì in poi il
+        tick parte SOLO se il dito tocca davvero il controllo (evento fidato).
+
+     Conseguenze pratiche per Travi:
+     - aptico mentre si SCORRE la fila dei giorni: impossibile. Lo scorrimento
+       non è un tocco su un controllo, e la via da codice è chiusa.
+     - aptico al TOCCO di un giorno: possibile, ed è quello che c'è qui sotto —
+       un interruttore di sistema vero, invisibile, steso sopra la pillola: il
+       dito tocca lui, iOS fa il tick, e il nostro click continua a funzionare
+       normalmente perché l'evento sale comunque alla pillola.
+     Se Apple chiudesse anche questa, o su un iPhone più vecchio, semplicemente
+     non si sente niente: nessun errore, nessun comportamento diverso. */
+  function stendiInterruttoreAptico(el) {
+    var sw = document.createElement("input");
+    sw.type = "checkbox";
+    sw.setAttribute("switch", "");      // niente appearance:none: deve restare di sistema
+    sw.className = "tocco";
+    sw.tabIndex = -1;
+    sw.setAttribute("aria-hidden", "true");
+    el.appendChild(sw);
   }
-  agganciaTicGiorni(document.getElementById("dayrow-itin"));
 
   /* ---------- rendering ---------- */
   function renderDayRow(containerId, view) {
@@ -332,7 +328,11 @@ import {
       var pill = document.createElement("div");
       pill.className = "daypill" + (selectedDay[view] === d.id ? " active" : "");
       pill.innerHTML = '<div class="dw">' + weekdayShort(d.date) + '</div><div class="dn num">' + dayNum(d.date) + "</div>";
-      pill.addEventListener("click", function () { tic(); selectedDay[view] = d.id; renderAll(); });
+      stendiInterruttoreAptico(pill);
+      pill.addEventListener("click", function () {
+        try { if (navigator.vibrate) navigator.vibrate(7); } catch (e) {} // Android
+        selectedDay[view] = d.id; renderAll();
+      });
       el.appendChild(pill);
     });
   }
