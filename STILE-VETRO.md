@@ -45,9 +45,22 @@ va rivisto: si riapre `pillola.html`, si ricalibra guardando, e si cambiano
 `--vetro-chiaro-bg` + `--vetro-chiaro-testo` mantengono la stessa fisica
 (sfocatura, bordo, ombra) ma con velo chiaro e testo scuro.
 
-Si usa **solo** dove il vetro sta stabilmente sopra contenuti scuri e serve un
-elemento chiaro per contrasto — oggi: la pillola del meteo sopra la foto della
-Home. Non è un'alternativa a piacere allo standard.
+**La regola per scegliere fra le due, decisa il 4/09/2026: comanda il fondo, non
+il gusto.** Il velo scuro al 22% sopra un fondo chiaro (`#FAFAF9`) dà una
+pillola grigia intorno a `#CACACA`: con il testo bianco previsto dallo standard
+è illeggibile. Quindi:
+
+| il vetro sta sopra… | variante | testo |
+|---|---|---|
+| foto, contenuti scuri, la mappa vista dall'alto in notturna | standard (velo scuro) | bianco |
+| il fondo chiaro dell'app, la mappa Alidade Smooth (quasi bianca) | chiara | `--vetro-chiaro-testo` |
+
+Non è uno scostamento dallo standard: è lo stesso materiale — stessa sfocatura,
+stesso bordo, stessa ombra — nella variante che il fondo rende leggibile. Quello
+che **non** si fa è inventare numeri nuovi per un caso particolare.
+
+Su fondo chiaro il bordo bianco al 30% sparisce (bianco su bianco): lì si usa
+`1px solid rgba(20,14,10,.10)`, il minimo per far vedere il filo del vetro.
 
 ## Perché la sfocatura è così bassa
 
@@ -61,9 +74,17 @@ finto. La trasparenza da sola non basta: serve che si **capisca** cosa passa.
 
 ## Dove è applicato oggi
 
+Standard (velo scuro, testo bianco) — tutti sopra la foto o contenuti scuri:
+
 - `.tabbar-inner` — la pillola di navigazione (è l'elemento su cui è stato calibrato)
 - `.icon-btn.glass` — i bottoni tondi sopra la foto della Home
-- `.weather-pill` — variante chiara
+- `.sheet-hero-prio` — l'etichetta "Imperdibile" sopra la foto nel foglio tappa
+
+Variante chiara (velo chiaro, testo scuro) — tutti sopra fondi chiari:
+
+- `.weather-card` — la card del meteo sopra la parte chiara della foto
+- `.daypill` — le pillole dei giorni in Itinerario (attiva: piena d'accento)
+- `.map-daypill` — la pillola del giorno sopra la mappa
 
 Fuori standard di proposito, perché non sono vetro sospeso ma superfici piene:
 

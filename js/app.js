@@ -34,8 +34,8 @@ import {
   // Durata come scelta rapida invece di un numero da digitare: raramente si
   // sa in anticipo quanto ci si fermerà davvero da qualche parte.
   var DURATA_OPTS = [
-    { id: "15", label: "15 min" }, { id: "30", label: "30 min" }, { id: "45", label: "45 min" },
-    { id: "60", label: "1 h" }, { id: "90", label: "1 h 30" }, { id: "120", label: "2 h+" }
+    { id: "15", label: "15 min" }, { id: "30", label: "30" }, { id: "45", label: "45" },
+    { id: "60", label: "1 h" }, { id: "90", label: "1½ h" }, { id: "120", label: "2 h+" }
   ];
   var TRANSPORTS = [
     { id: "walk", label: "A piedi", icon: "ic-walk" },
@@ -629,16 +629,32 @@ import {
       return;
     }
     var o = (window.TRAVI_ORARI || {})[s.id];
-    var orarioTxt = o && o.tipo === "orari" ? (o.ap + "–" + o.ch) : (o && o.tipo === "sempre" ? "sempre aperto" : "");
+    var chiude = (o && o.tipo === "orari") ? ("chiude " + o.ch) : "";
+
+    // Quanto ci vuole per arrivarci dalla tappa precedente: il tempo previsto
+    // nei dati se c'è, altrimenti la stima a piedi dalle coordinate — lo
+    // stesso numero che usa il motore della giornata (js/giornata.js).
+    var tempo = "", prec = mapSelIdx > 0 ? list[mapSelIdx - 1] : null;
+    if (s.tmin) {
+      tempo = s.tmin + " min " + (s.tmode === "walk" ? "a piedi" : "di spostamento");
+    } else if (prec && window.Giornata) {
+      var km = window.Giornata.kmTra(prec, s);
+      var piedi = window.Giornata.minutiAPiedi(prec, s);
+      if (piedi != null && km != null && km <= 5) tempo = piedi + " min a piedi";
+    }
+
+    // Riga tempi: quanto ci vuole ad arrivarci e, se chiude, a che ora — sono
+    // le due cose che servono guardando la mappa in mezzo alla strada.
+    var riga2 = [tempo, chiude].filter(Boolean).join(" · ");
     body.innerHTML =
-      '<div class="top">' +
       '<div class="thumb" style="background-image:url(\'' + imgFor(s) + '\')"></div>' +
       '<div class="info">' +
       '<div class="title">' + escapeHtml(s.title) + "</div>" +
-      '<div class="sub">' + s.time + (s.sub ? " · " + escapeHtml(s.sub) : "") + (orarioTxt ? " · " + orarioTxt : "") + "</div>" +
-      "</div></div>" +
-      '<button class="map-details">Vedi dettagli</button>';
-    body.querySelector(".map-details").addEventListener("click", function () { openSheet(s.id); });
+      '<div class="sub">' + s.time + (s.sub ? " · " + escapeHtml(s.sub) : "") + "</div>" +
+      (riga2 ? '<div class="tempo"><svg><use href="#ic-walk"/></svg>' + riga2 + "</div>" : "") +
+      "</div>" +
+      '<svg class="chev"><use href="#ic-chev"/></svg>';
+    body.onclick = function () { openSheet(s.id); };
   }
 
   function renderHome() {
@@ -897,6 +913,39 @@ import {
     return sel ? sel.dataset.id : null;
   }
 
+  // Con un foglio aperto, il dito che scorreva sopra il foglio faceva scorrere
+  // la PAGINA SOTTO invece del foglio: iOS passa il gesto al contenitore
+  // sottostante quando il contenuto del foglio non ha niente da scorrere.
+  // Finché un foglio è aperto, la vista sotto resta ferma.
+  function bloccaSfondo(bloccato) {
+    document.querySelectorAll(".scroll").forEach(function (el) {
+      el.style.overflowY = bloccato ? "hidden" : "auto";
+    });
+  }
+
+  // Un posto senza coordinate non può avere un pin sulla mappa. Se è stato
+  // scritto a mano invece che scelto dalla ricerca, le cerchiamo noi in
+  // background: così qualunque tappa aggiunta — anche partendo dai Preferiti —
+  // finisce da sola sulla mappa col suo numero, senza doverci pensare.
+  function trovaCoordinate(titolo, zona) {
+    if (!window.TraviCerca) return Promise.resolve(null);
+    return window.TraviCerca.cerca((titolo + " " + (zona || "")).trim()).then(function (r) {
+      return (r && r.length) ? { lat: r[0].lat, lon: r[0].lon } : null;
+    }).catch(function () { return null; });
+  }
+
+  // Applica una modifica a una tappa, che sia una aggiunta da voi (custom) o
+  // una del programma originale (dove le modifiche vivono negli overrides).
+  function applicaPatchTappa(id, patch) {
+    var isCustom = state.custom.some(function (c) { return c.id === id; });
+    if (isCustom) {
+      state.custom = state.custom.map(function (c) { return c.id === id ? Object.assign({}, c, patch) : c; });
+    } else {
+      state.overrides[id] = Object.assign({}, state.overrides[id] || {}, patch);
+    }
+    persist();
+  }
+
   // Ricordano, per la tappa in modifica, ciò che non ha un campo di testo suo:
   // la posizione trovata cercando il posto, e una foto già presente da non
   // ricercare di nuovo se non cambia il posto.
@@ -925,7 +974,9 @@ import {
     selectPick("f-priorita", (s && window.Giornata) ? window.Giornata.prioDi(s)
                : (s && s.prio) || "norm");
     var done = !!(s && s.done);
-    document.getElementById("f-done").classList.toggle("on", done);
+    var fDone = document.getElementById("f-done");
+    fDone.classList.toggle("on", done);
+    etichettaFatto(fDone);
     document.getElementById("btn-delete").style.display = (s && !locked) ? "block" : "none";
     document.getElementById("lock-note").hidden = !locked;
     sheet.querySelector(".sheet-body").classList.toggle("locked", locked);
@@ -945,22 +996,59 @@ import {
       quicklinks.hidden = true;
     }
 
+    // Testa illustrata: foto + nome + zona. Solo su una tappa che esiste già.
+    // E se la tappa esiste già, i campi del nome partono chiusi (il nome è
+    // scritto sulla foto): il foglio si apre corto, con davanti solo le cose
+    // che si toccano davvero durante la giornata.
+    document.getElementById("sez-posto").hidden = !!s;
+    document.getElementById("posto-toggle").hidden = !s;
+    document.getElementById("posto-toggle").classList.remove("open");
+
+    var hero = document.getElementById("sheet-hero");
+    if (s) {
+      hero.hidden = false;
+      document.getElementById("sheet-hero-img").style.backgroundImage = "url('" + imgFor(s) + "')";
+      document.getElementById("sheet-hero-title").textContent = s.title;
+      document.getElementById("sheet-hero-sub").textContent = s.time + (s.sub ? " · " + s.sub : "");
+      var prioTop = window.Giornata ? window.Giornata.prioDi(s) === "top" : s.prio === "top";
+      document.getElementById("sheet-hero-prio").hidden = !prioTop;
+    } else {
+      hero.hidden = true;
+    }
+
     document.getElementById("altro-body").hidden = true;
     document.getElementById("altro-toggle").classList.remove("open");
 
     backdrop.classList.add("show");
     sheet.classList.add("show");
+    bloccaSfondo(true);
   }
   function closeSheet() {
     backdrop.classList.remove("show");
     sheet.classList.remove("show");
+    bloccaSfondo(false);
     editingId = null;
   }
   document.getElementById("sheet-close").addEventListener("click", closeSheet);
   backdrop.addEventListener("click", closeSheet);
-  document.getElementById("f-done").addEventListener("click", function () { this.classList.toggle("on"); });
+  // Il tasto dice in che stato si è, non solo con il colore: da spento invita
+  // a segnarla, da acceso conferma che è fatta (e si può ancora tornare indietro).
+  function etichettaFatto(btn) {
+    btn.querySelector("span").textContent = btn.classList.contains("on")
+      ? "Completata" : "Segna come completata";
+  }
+  document.getElementById("f-done").addEventListener("click", function () {
+    this.classList.toggle("on");
+    etichettaFatto(this);
+  });
   document.getElementById("altro-toggle").addEventListener("click", function () {
     var body = document.getElementById("altro-body");
+    var apri = body.hidden;
+    body.hidden = !apri;
+    this.classList.toggle("open", apri);
+  });
+  document.getElementById("posto-toggle").addEventListener("click", function () {
+    var body = document.getElementById("sez-posto");
     var apri = body.hidden;
     body.hidden = !apri;
     this.classList.toggle("open", apri);
@@ -1035,6 +1123,11 @@ import {
           '<div class="title">' + escapeHtml(f.title) + "</div>" +
           '<div class="sub">' + escapeHtml(f.sub || "") + "</div>" +
           (f.notes ? '<div class="fav-notes">' + escapeHtml(f.notes) + "</div>" : "") +
+          // Dice a colpo d'occhio se il posto finirà sulla mappa quando lo
+          // pianificate: la posizione ce l'ha, oppure la stiamo cercando.
+          (f.lat != null
+            ? '<div class="fav-pos ok"><svg><use href="#ic-pin"/></svg>posizione trovata</div>'
+            : '<div class="fav-pos"><svg><use href="#ic-search"/></svg>posizione da trovare</div>') +
           "</div>" +
           '<div class="fav-actions">' +
           '<button class="fav-plan">Pianifica</button>' +
@@ -1066,10 +1159,12 @@ import {
     favLatLon = null;
     backdrop.classList.add("show");
     favSheet.classList.add("show");
+    bloccaSfondo(true);
   }
   function closeFavSheet() {
     backdrop.classList.remove("show");
     favSheet.classList.remove("show");
+    bloccaSfondo(false);
   }
   document.getElementById("fav-close").addEventListener("click", closeFavSheet);
   backdrop.addEventListener("click", closeFavSheet);
@@ -1106,6 +1201,17 @@ import {
         persist();
       });
     }
+    // Scritto a mano senza scegliere dalla ricerca: cerchiamo noi la posizione,
+    // altrimenti quando lo pianificate non avrebbe un pin sulla mappa.
+    if (!favLatLon) {
+      trovaCoordinate(fav.title, fav.sub).then(function (c) {
+        if (!c) return;
+        state.favorites = state.favorites.map(function (f) {
+          return f.id === newId ? Object.assign({}, f, { lat: c.lat, lon: c.lon }) : f;
+        });
+        persist();
+      });
+    }
   });
 
   /* ---------- foglio "pianifica un preferito" ---------- */
@@ -1131,10 +1237,12 @@ import {
     renderAssignBody(fav, suggeriti);
     backdrop.classList.add("show");
     assignSheet.classList.add("show");
+    bloccaSfondo(true);
   }
   function closeAssignSheet() {
     backdrop.classList.remove("show");
     assignSheet.classList.remove("show");
+    bloccaSfondo(false);
   }
   document.getElementById("assign-close").addEventListener("click", closeAssignSheet);
   backdrop.addEventListener("click", closeAssignSheet);
@@ -1220,6 +1328,16 @@ import {
     closeAssignSheet();
     persist();
     toast("Aggiunto all'itinerario del " + ((dayById(dayId) || {}).date || ""));
+
+    // Da qui in poi è una tappa come tutte le altre: entra nell'elenco del
+    // giorno all'orario scelto, prende il suo numero e compare sulla mappa.
+    // Se il preferito non aveva una posizione, la cerchiamo adesso — altrimenti
+    // sarebbe l'unica tappa senza pin.
+    if (nuovaTappa.lat == null) {
+      trovaCoordinate(nuovaTappa.title, nuovaTappa.sub).then(function (c) {
+        if (c) applicaPatchTappa(newId, { lat: c.lat, lon: c.lon });
+      });
+    }
   }
 
   /* ---------- foglio budget extra ---------- */
@@ -1239,10 +1357,12 @@ import {
   function openBudgetSheet() {
     backdrop.classList.add("show");
     budgetSheet.classList.add("show");
+    bloccaSfondo(true);
   }
   function closeBudgetSheet() {
     backdrop.classList.remove("show");
     budgetSheet.classList.remove("show");
+    bloccaSfondo(false);
   }
   document.getElementById("budget-summary-card").addEventListener("click", openBudgetSheet);
   document.getElementById("budget-close").addEventListener("click", closeBudgetSheet);
@@ -1313,14 +1433,16 @@ import {
     // mano sia per una scelta dalla ricerca senza una foto trovata prima.
     if (!payload.foto && window.TraviFoto) {
       window.TraviFoto.cerca(payload.title + " " + payload.sub).then(function (url) {
-        if (!url) return;
-        var isCustomNow = state.custom.some(function (c) { return c.id === idPerFoto; });
-        if (isCustomNow) {
-          state.custom = state.custom.map(function (c) { return c.id === idPerFoto ? Object.assign({}, c, { foto: url }) : c; });
-        } else {
-          state.overrides[idPerFoto] = Object.assign({}, state.overrides[idPerFoto] || {}, { foto: url });
-        }
-        persist();
+        if (url) applicaPatchTappa(idPerFoto, { foto: url });
+      });
+    }
+
+    // Senza coordinate non c'è nessun pin sulla mappa: se non sono arrivate
+    // dalla ricerca del posto, le cerchiamo dal nome in background. È così che
+    // una tappa scritta a mano prende comunque il suo numero sulla mappa.
+    if (payload.lat == null) {
+      trovaCoordinate(payload.title, payload.sub).then(function (c) {
+        if (c) applicaPatchTappa(idPerFoto, { lat: c.lat, lon: c.lon });
       });
     }
   });

@@ -78,7 +78,9 @@
     --t-caption:  400 11px/16px var(--font-ui);
     --font-ui: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --hero-h: 424px;      /* altezza totale della foto in home */
-    --hero-sliver: 132px; /* quanto ne resta sempre visibile, incollato in alto, quando si scorre */
+    /* Qui c'era --hero-sliver (132px): lo scampolo di foto che restava incollato
+       in alto durante lo scroll. Quel comportamento è stato tolto il 4/09/2026
+       perché la foto ferma finiva sopra le card della Home. */
     --hero-bleed: 320px;  /* quanto la foto sbocca oltre il bordo superiore, per il rimbalzo elastico */
   }
   /* Travi keeps questa palette chiara indipendentemente dal tema di sistema —
@@ -314,16 +316,19 @@
     pointer-events:none;
   }
   /* Il blocco di testo ha sia un top che un bottom fissi (quindi un'altezza
-     massima certa): non può mai scendere sopra la topbar/il meteo, anche con
+     massima certa): non può mai salire sopra la topbar/il meteo, anche con
      un testo reale più lungo del previsto — semmai si "accorcia" da sopra
      (overflow:hidden), perdendo per prima la riga meno importante (l'eyebrow),
      non la città o il conto alla rovescia che contano di più.
-     Si ferma inoltre ben sopra --hero-sliver: quando la foto si "raccoglie" in
-     alto durante lo scroll, resta visibile solo la foto (+ la topbar). */
+     Il bottom era calc(--hero-sliver + 16px) per lasciare spazio alla foto che
+     si "raccoglieva" in alto durante lo scroll: quel comportamento non c'è
+     più (vedi index.html), e teneva il testo così in alto da finire sotto la
+     card del meteo. Ora il testo sta appoggiato in fondo alla foto, che è
+     anche dove ha senso leggerlo. */
   .hero-scrim{
     position:absolute; z-index:2; left:0; right:0;
-    top: calc(env(safe-area-inset-top) + 112px);
-    bottom: calc(var(--hero-sliver) + 16px);
+    top: calc(env(safe-area-inset-top) + 130px);
+    bottom: 20px;
     overflow:hidden;
     display:flex; flex-direction:column; justify-content:flex-end; align-items:flex-start;
     padding: 0 18px;
@@ -425,15 +430,27 @@
   /* ---------- day selector ---------- */
   .dayrow{ display:flex; gap:8px; overflow-x:auto; padding: 14px 16px 4px; scrollbar-width:none; touch-action:pan-x; }
   .dayrow::-webkit-scrollbar{ display:none; }
+  /* Le pillole dei giorni usano lo stesso MATERIALE della pillola di
+     navigazione (sfocatura, bordo, ombra dello standard VETRO), ma nella
+     variante chiara con testo scuro: qui il vetro sta su un fondo chiaro, e
+     il velo scuro + testo bianco dello standard darebbe una pillola grigia
+     con scritte bianche sopra — illeggibile. Stessa famiglia, stessa forma,
+     variante giusta per il fondo. La pillola attiva resta piena d'accento,
+     come il tab attivo nella barra di navigazione. */
   .daypill{
-    flex:none; width:52px; padding:9px 0 8px; border-radius: var(--r-md);
-    background:var(--surface); border:1px solid var(--border); text-align:center; cursor:pointer;
+    flex:none; width:54px; padding:9px 0 8px; border-radius: var(--r-pill);
+    background: var(--vetro-chiaro-bg);
+    backdrop-filter: var(--vetro-filtro);
+    -webkit-backdrop-filter: var(--vetro-filtro);
+    border: 1px solid rgba(20,14,10,.10);
+    box-shadow: 0 6px 16px -8px rgba(20,14,10,.22), 0 1px 3px -1px rgba(20,14,10,.10);
+    text-align:center; cursor:pointer;
   }
   .daypill .dw{ font-size:.63rem; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); }
-  .daypill .dn{ font-family:var(--font-display); font-size:1.15rem; margin-top:1px; }
-  .daypill.active{ background: var(--text); border-color:var(--text); }
-  .daypill.active .dw{ color: var(--bg); opacity:.7; }
-  .daypill.active .dn{ color: var(--bg); }
+  .daypill .dn{ font-family:var(--font-display); font-size:1.15rem; margin-top:1px; color: var(--vetro-chiaro-testo); }
+  .daypill.active{ background: var(--accent); border-color: var(--accent); box-shadow: 0 8px 20px -8px rgba(245,80,60,.55); }
+  .daypill.active .dw{ color:#fff; opacity:.8; }
+  .daypill.active .dn{ color:#fff; }
   .city-heading{ padding: 10px 16px 0; display:flex; align-items:baseline; gap:8px; }
   .city-heading h2{ margin:0; font-size:1.3rem; }
   .city-heading span{ font-size:.78rem; color:var(--text-muted); }
@@ -498,7 +515,12 @@
      giorno stiamo guardando" — qui non c'è più nessun selettore di giorno
      proprio, solo una pillola che RIPORTA il giorno scelto in Itinerario. */
   .mapfull{ position:relative; flex:1; min-height:0; }
-  #map{ position:absolute; inset:0; }
+  /* z-index:0 NON è decorativo: Leaflet dà ai suoi livelli interni z-index
+     400-700, e senza un contesto di impilamento qui quelli finivano SOPRA la
+     pillola di navigazione (z-index 30) — la mappa se la mangiava, e da lì
+     non si poteva più cambiare pagina. Con z-index:0 tutto Leaflet resta
+     chiuso dentro la mappa, sotto pillola e card. NON toglierlo. */
+  #map{ position:absolute; inset:0; z-index:0; }
   .leaflet-container{ background: var(--surface-2); font-family: var(--font-ui); }
   .leaflet-control-zoom{ margin-top: calc(env(safe-area-inset-top) + 64px) !important; }
   .leaflet-control-zoom a{
@@ -511,7 +533,7 @@
     font: 700 12px/1 var(--font-ui); border:2px solid #fff;
     box-shadow: 0 2px 6px rgba(20,14,10,.35);
   }
-  .pin-num.sel{ background:var(--text); width:32px; height:32px; font-size:14px; box-shadow: 0 3px 10px rgba(20,14,10,.45); }
+  .pin-num.sel{ background:var(--indigo); width:32px; height:32px; font-size:14px; box-shadow: 0 3px 12px rgba(20,14,10,.45); }
 
   .map-topbar{
     position:absolute; z-index:3; left:0; right:0; top:0;
@@ -520,37 +542,38 @@
   }
   .map-daypill{
     pointer-events:auto; cursor:pointer;
-    background: var(--vetro-bg); backdrop-filter: var(--vetro-filtro); -webkit-backdrop-filter: var(--vetro-filtro);
-    border: var(--vetro-bordo); box-shadow: var(--vetro-ombra); color: var(--vetro-testo);
+    background: var(--vetro-chiaro-bg); backdrop-filter: var(--vetro-filtro); -webkit-backdrop-filter: var(--vetro-filtro);
+    border: 1px solid rgba(20,14,10,.10); box-shadow: var(--vetro-ombra); color: var(--vetro-chiaro-testo);
     border-radius: var(--r-pill); padding:8px 18px; font-size:.82rem; font-weight:600;
   }
 
+  /* La card della tappa a fuoco: una riga sola, appoggiata SOPRA la pillola di
+     navigazione (che resta sempre raggiungibile). Si tocca la card per aprire
+     la tappa, le frecce ai lati per scorrere le tappe del giorno. */
   .map-card{
-    position:absolute; z-index:3; left:14px; right:14px; bottom: calc(96px + env(safe-area-inset-bottom));
-    display:flex; align-items:center; gap:6px;
+    position:absolute; z-index:3; left:14px; right:14px; bottom: calc(95px + env(safe-area-inset-bottom));
+    display:flex; align-items:center; gap:4px;
     background: var(--surface); border-radius: var(--r-xl); box-shadow: var(--shadow-2);
-    border:1px solid var(--border); padding:10px;
+    border:1px solid var(--border); padding:8px;
   }
   .map-nav{
-    flex:none; width:32px; height:32px; border-radius:50%; border:none; background:var(--surface-2);
+    flex:none; width:30px; height:30px; border-radius:50%; border:none; background:var(--surface-2);
     color:var(--text-muted); display:flex; align-items:center; justify-content:center; cursor:pointer;
   }
   .map-nav svg{ width:14px; height:14px; }
   .map-nav.prev svg{ transform:scaleX(-1); }
-  .map-card-body{ flex:1; min-width:0; display:flex; flex-direction:column; gap:8px; }
-  .map-card-body .top{ display:flex; gap:10px; align-items:center; }
+  .map-card-body{ flex:1; min-width:0; display:flex; gap:10px; align-items:center; cursor:pointer; }
   .map-card-body .thumb{
-    flex:none; width:50px; height:50px; border-radius:13px; background-size:cover; background-position:center;
+    flex:none; width:46px; height:46px; border-radius:13px; background-size:cover; background-position:center;
     box-shadow: inset 0 0 0 1px rgba(20,15,10,.08);
   }
   .map-card-body .info{ flex:1; min-width:0; }
   .map-card-body .title{ font-weight:600; font-size:.92rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .map-card-body .sub{ font-size:.74rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .map-card-body .empty{ font-size:.82rem; color:var(--text-muted); padding:8px 4px; text-align:center; }
-  .map-details{
-    border:none; border-radius:var(--r-pill); background:var(--accent); color:#fff; font-weight:600;
-    font-size:.82rem; padding:9px; width:100%; cursor:pointer;
-  }
+  .map-card-body .sub{ font-size:.74rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; margin-top:1px; }
+  .map-card-body .tempo{ font-size:.74rem; color:var(--accent); font-weight:600; margin-top:2px; display:flex; align-items:center; gap:4px; white-space:nowrap; overflow:hidden; }
+  .map-card-body .tempo svg{ width:12px; height:12px; }
+  .map-card-body .chev{ flex:none; color:var(--text-faint); width:16px; height:16px; }
+  .map-card-body .empty{ font-size:.82rem; color:var(--text-muted); padding:10px 4px; text-align:center; width:100%; }
   .linkbtn{
     flex:1; text-align:center; font-size:.76rem; padding:8px 6px; border-radius:var(--r-md);
     border:1px solid var(--border); color:var(--text); text-decoration:none; background:var(--surface-2);
@@ -617,6 +640,7 @@
   .backdrop{
     position:fixed; inset:0; background:rgba(20,17,12,.42); backdrop-filter: blur(2px); z-index:40;
     opacity:0; pointer-events:none; transition: opacity .25s ease;
+    touch-action:none; /* il dito sulla parte scura non trascina la pagina sotto */
   }
   .backdrop.show{ opacity:1; pointer-events:auto; }
   .sheet{
@@ -627,8 +651,34 @@
   .sheet.show{ transform: translate(-50%, 0); }
   .sheet-grip{ width:36px; height:4px; background:var(--border); border-radius:99px; margin:10px auto 0; }
   .sheet-head{ display:flex; justify-content:space-between; align-items:center; padding:12px 18px 4px; }
-  .sheet-head .x{ background:var(--surface-2); border:none; width:30px; height:30px; border-radius:50%; color:var(--text-muted); cursor:pointer; }
-  .sheet-body{ overflow-y:auto; padding: 8px 20px 26px; }
+  .sheet-head .x{ background:var(--surface-2); border:none; width:30px; height:30px; border-radius:50%; color:var(--text-muted); cursor:pointer; font-size:15px; line-height:1; }
+  .sheet-body{
+    overflow-y:auto; padding: 8px 20px 26px;
+    overscroll-behavior: contain; /* lo scroll del foglio non "sfonda" nella pagina sotto */
+  }
+
+  /* Testa illustrata del foglio: la foto della tappa con il titolo sopra, al
+     posto di aprire su un elenco di campi grigi. Compare solo su una tappa che
+     esiste già (per una nuova non c'è ancora niente da illustrare). */
+  .sheet-hero{
+    position:relative; height:132px; border-radius: var(--r-lg); overflow:hidden;
+    margin-bottom:4px; background: var(--surface-2);
+  }
+  .sheet-hero-img{ position:absolute; inset:0; background-size:cover; background-position:center; }
+  .sheet-hero-scrim{
+    position:absolute; inset:0;
+    background: linear-gradient(to top, rgba(24,16,12,.78), rgba(24,16,12,.05) 72%);
+  }
+  .sheet-hero-txt{ position:absolute; left:14px; right:14px; bottom:12px; color:#FFF9EE; }
+  .sheet-hero-txt .t{ font-family:var(--font-display); font-weight:600; font-size:1.15rem; line-height:1.2; }
+  .sheet-hero-txt .s{ font-size:.78rem; opacity:.85; margin-top:2px; }
+  .sheet-hero-prio{
+    position:absolute; top:10px; right:10px; display:flex; align-items:center; gap:5px;
+    background: var(--vetro-bg); backdrop-filter: var(--vetro-filtro); -webkit-backdrop-filter: var(--vetro-filtro);
+    border: var(--vetro-bordo); color: var(--vetro-testo);
+    border-radius: var(--r-pill); padding:5px 10px; font-size:.68rem; font-weight:600;
+  }
+  .sheet-hero-prio svg{ width:12px; height:12px; }
   .lock-note{
     background: var(--surface-2); border:1px solid var(--border); border-radius: var(--r-md);
     padding:12px 14px; font-size:.8rem; color:var(--text-muted); margin-top:8px; line-height:1.4;
@@ -637,19 +687,30 @@
   .sheet-body.locked .field textarea,
   .sheet-body.locked .pickrow{ opacity:.55; pointer-events:none; }
   .locked-chip{ color:#8A5A2E; background:#FBEFE3; border-color:#E7B978; }
-  .field{ margin-top:14px; }
-  .field label{ font-size:.72rem; text-transform:uppercase; letter-spacing:.06em; color:var(--text-muted); display:block; margin-bottom:6px; }
+  .field{ margin-top:16px; }
+  .field label{ font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-muted); display:block; margin-bottom:7px; font-weight:600; }
   .field input[type=text], .field input[type=time], .field input[type=number], .field textarea{
-    width:100%; border:1px solid var(--border); background:var(--surface-2); border-radius:var(--r-md);
-    padding:11px 12px; font-family:inherit; font-size:.92rem; color:var(--text);
+    width:100%; border:1px solid var(--border); background:var(--surface-2); border-radius:14px;
+    padding:13px 14px; font-family:inherit; font-size:.95rem; color:var(--text);
+    transition: border-color .15s ease, background .15s ease;
   }
-  .field textarea{ resize:vertical; min-height:64px; }
+  .field input:focus, .field textarea:focus{
+    outline:none; border-color: var(--accent); background: var(--surface);
+  }
+  .field textarea{ resize:vertical; min-height:70px; }
+  /* Titoletto che separa i blocchi del foglio, per non avere una colonna
+     indistinta di campi uno sotto l'altro. */
+  .sheet-sez{
+    display:flex; align-items:center; gap:8px; margin:22px 0 2px;
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-faint); font-weight:600;
+  }
+  .sheet-sez::after{ content:""; flex:1; height:1px; background:var(--border); }
   .pickrow{ display:flex; gap:7px; flex-wrap:wrap; }
   .pick{
-    border:1px solid var(--border); background:var(--surface-2); border-radius:var(--r-pill); padding:7px 13px;
-    font-size:.8rem; cursor:pointer; color:var(--text-muted); display:flex; align-items:center; gap:5px;
+    border:1px solid var(--border); background:var(--surface-2); border-radius:var(--r-pill); padding:9px 14px;
+    font-size:.82rem; cursor:pointer; color:var(--text-muted); display:flex; align-items:center; gap:6px;
   }
-  .pick svg{ width:13px; height:13px; }
+  .pick svg{ width:14px; height:14px; }
   .pick.sel{ background:var(--text); border-color:var(--text); color:var(--bg); }
   .row2{ display:flex; gap:10px; }
   .row2 > .field{ flex:1; }
@@ -818,6 +879,9 @@
   .fav-card .title{ font-family:var(--font-display); font-size:.98rem; font-weight:600; }
   .fav-card .sub{ font-size:.76rem; color:var(--text-muted); margin-top:1px; }
   .fav-card .fav-notes{ font-size:.76rem; color:var(--text-muted); margin-top:4px; font-style:italic; }
+  .fav-pos{ display:flex; align-items:center; gap:4px; font-size:.7rem; color:var(--text-faint); margin-top:5px; }
+  .fav-pos.ok{ color: var(--good); }
+  .fav-pos svg{ width:11px; height:11px; }
   .fav-actions{ flex:none; display:flex; flex-direction:column; align-items:stretch; gap:6px; }
   .fav-plan{
     border:none; border-radius:var(--r-pill); background:var(--accent); color:#fff; font-weight:600;
