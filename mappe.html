@@ -1,0 +1,161 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Quale fondo mappa</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.css">
+<style>
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font:400 15px/1.4 -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;
+       background:#FAFAF9;color:#1C1C1E}
+  header{padding:calc(env(safe-area-inset-top) + 12px) 14px 10px;background:#fff;border-bottom:1px solid #EAEAE8}
+  h1{font-size:17px;font-weight:600}
+  p.sub{font-size:13px;color:#8E8E93;margin-top:3px}
+  .chiave{display:flex;gap:8px;padding:10px 14px;background:#FFF8F0;border-bottom:1px solid #EAEAE8}
+  .chiave input{flex:1;min-width:0;padding:9px 11px;border:1px solid #E6DCCF;border-radius:10px;
+                font:13px inherit;font-family:inherit;background:#fff}
+  .chiave button{flex:none;padding:9px 14px;border:none;border-radius:10px;background:#1C1C1E;color:#fff;
+                 font:600 13px inherit;font-family:inherit}
+  .pane{border-bottom:1px solid #EAEAE8}
+  .barra{display:flex;align-items:center;gap:8px;padding:8px 12px;background:#fff}
+  .barra select{flex:1;padding:8px 10px;border:1px solid #EAEAE8;border-radius:10px;
+                font:13px inherit;font-family:inherit;background:#FAFAF9}
+  .barra .tag{flex:none;font-size:11px;font-weight:700;color:#8E8E93;width:14px}
+  .m{height:34vh;width:100%}
+  .nota{padding:6px 12px 9px;font-size:11px;color:#8E8E93;background:#fff}
+  .fondo{padding:14px 14px 40px;font-size:13px;color:#8E8E93}
+  .fondo b{color:#1C1C1E}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Quale fondo mappa</h1>
+  <p class="sub">Stesse tappe vere del giorno 9 a Kyoto, sui due fondi affiancati.
+     Le mappe sono sincronizzate: sposti una, si sposta l'altra.</p>
+</header>
+
+<div class="chiave">
+  <input id="key" placeholder="chiave Stadia (facoltativa)" autocapitalize="off" autocorrect="off" spellcheck="false">
+  <button id="usa">attiva</button>
+</div>
+
+<div class="pane">
+  <div class="barra"><span class="tag">A</span><select id="sa"></select></div>
+  <div class="m" id="ma"></div>
+  <div class="nota" id="na"></div>
+</div>
+
+<div class="pane">
+  <div class="barra"><span class="tag">B</span><select id="sb"></select></div>
+  <div class="m" id="mb"></div>
+  <div class="nota" id="nb"></div>
+</div>
+
+<div class="fondo">
+  <p><b>Senza registrazione</b> funzionano subito: OpenStreetMap e Esri.<br>
+  <b>Stadia</b> ha bisogno di una chiave gratuita — account in due minuti, nessuna carta —
+  e finché non la incolli qui sopra i suoi stili restano grigi.</p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
+<script>
+var PUNTI = [{"n": 1, "t": "Kyoto Station", "lat": 34.986447, "lon": 135.758677}, {"n": 2, "t": "Kiyomizu-dera", "lat": 34.994303, "lon": 135.784439}, {"n": 3, "t": "Sannenzaka", "lat": 34.996479, "lon": 135.781318}, {"n": 4, "t": "Fushimi Inari", "lat": 34.967519, "lon": 135.77971}];
+
+var STILI = [
+  {id:'osm',   nome:'OpenStreetMap — standard',  key:false,
+   url:'https://tile.openstreetmap.org/{z}/{x}/{y}.png',
+   attr:'&copy; OpenStreetMap',
+   nota:'Gratis, nessuna registrazione. Colori pieni: strade gialle, parchi verdi, acqua azzurra.'},
+  {id:'hot',   nome:'OpenStreetMap — umanitario', key:false,
+   url:'https://a.tile.openstreetmap.fr/hot/{z}/{x}/{y}.png',
+   attr:'&copy; OpenStreetMap, HOT',
+   nota:'Variante piu\u0300 contrastata, pensata per leggere in fretta. Sempre gratis.'},
+  {id:'esri',  nome:'Esri — grigio chiaro', key:false,
+   url:'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+   attr:'&copy; Esri',
+   nota:'Molto pallido e neutro, i pin risaltano. Gratis con attribuzione. Etichette scarne.'},
+  {id:'esrig', nome:'Esri — grigio scuro', key:false,
+   url:'https://services.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+   attr:'&copy; Esri',
+   nota:'Versione scura dello stesso. Da valutare se un giorno vorrai il tema notte.'},
+  {id:'stadia', nome:'Stadia — Alidade Smooth  (chiave)', key:true,
+   url:'https://tiles.stadiamaps.com/tiles/alidade_smooth/{z}/{x}/{y}{r}.png',
+   attr:'&copy; Stadia Maps, OpenStreetMap',
+   nota:'Praticamente identico al fondo che ti era piaciuto. Serve la chiave gratuita.'},
+  {id:'stadiat', nome:'Stadia — Toner Lite  (chiave)', key:true,
+   url:'https://tiles.stadiamaps.com/tiles/stamen_toner_lite/{z}/{x}/{y}{r}.png',
+   attr:'&copy; Stadia Maps, Stamen, OpenStreetMap',
+   nota:'Bianco e nero essenziale, quasi da stampa. Molto elegante, meno informativo.'}
+];
+
+var chiave = localStorage.getItem('stadia_key') || '';
+document.getElementById('key').value = chiave;
+
+function opzioni(sel, scelto){
+  sel.innerHTML = '';
+  STILI.forEach(function(s){
+    var o = document.createElement('option');
+    o.value = s.id;
+    o.textContent = s.nome + (s.key && !chiave ? '  — manca la chiave' : '');
+    o.disabled = s.key && !chiave;
+    sel.appendChild(o);
+  });
+  sel.value = scelto;
+}
+
+function crea(divId){
+  var m = L.map(divId, {zoomControl:false}).setView([34.985, 135.775], 13);
+  PUNTI.forEach(function(p){
+    L.circleMarker([p.lat, p.lon], {radius:8, color:'#fff', weight:2,
+      fillColor:'#F5503C', fillOpacity:1}).addTo(m).bindTooltip(p.n + '. ' + p.t);
+  });
+  L.polyline(PUNTI.map(function(p){ return [p.lat, p.lon]; }),
+    {color:'#F5503C', weight:3, opacity:.65, dashArray:'6 6'}).addTo(m);
+  return m;
+}
+
+var A = crea('ma'), B = crea('mb'), livA = null, livB = null;
+
+function metti(mappa, vecchio, id, notaId){
+  var s = STILI.filter(function(x){ return x.id === id; })[0];
+  if (!s) return vecchio;
+  if (vecchio) mappa.removeLayer(vecchio);
+  var url = s.url + (s.key ? '?api_key=' + encodeURIComponent(chiave) : '');
+  var l = L.tileLayer(url, {attribution: s.attr, maxZoom: 19}).addTo(mappa);
+  document.getElementById(notaId).textContent = s.nota;
+  return l;
+}
+
+var sincro = false;
+function lega(da, a){
+  da.on('move', function(){
+    if (sincro) return;
+    sincro = true; a.setView(da.getCenter(), da.getZoom(), {animate:false}); sincro = false;
+  });
+}
+lega(A, B); lega(B, A);
+
+document.getElementById('sa').onchange = function(){ livA = metti(A, livA, this.value, 'na'); };
+document.getElementById('sb').onchange = function(){ livB = metti(B, livB, this.value, 'nb'); };
+
+document.getElementById('usa').onclick = function(){
+  chiave = document.getElementById('key').value.trim();
+  try { localStorage.setItem('stadia_key', chiave); } catch(e){}
+  opzioni(document.getElementById('sa'), document.getElementById('sa').value);
+  opzioni(document.getElementById('sb'), document.getElementById('sb').value);
+  if (chiave){
+    document.getElementById('sa').value = 'stadia';
+    livA = metti(A, livA, 'stadia', 'na');
+  }
+};
+
+opzioni(document.getElementById('sa'), 'esri');
+opzioni(document.getElementById('sb'), 'osm');
+livA = metti(A, null, 'esri', 'na');
+livB = metti(B, null, 'osm', 'nb');
+if (chiave){ document.getElementById('sa').value='stadia'; livA = metti(A, livA, 'stadia', 'na'); }
+</script>
+</body>
+</html>
