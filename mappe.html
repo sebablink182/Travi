@@ -54,9 +54,12 @@
 </div>
 
 <div class="fondo">
-  <p><b>Senza registrazione</b> funzionano subito: OpenStreetMap e Esri.<br>
-  <b>Stadia</b> ha bisogno di una chiave gratuita — account in due minuti, nessuna carta —
-  e finché non la incolli qui sopra i suoi stili restano grigi.</p>
+  <p><b>Senza registrazione</b> funzionano subito: OpenStreetMap e Esri.</p>
+  <p style="margin-top:8px"><b>Stadia</b> funziona in due modi, basta uno dei due:<br>
+  &nbsp;&nbsp;• <b>dominio autorizzato</b> (consigliato) — nel loro pannello, Manage Properties →
+  Authentication Configuration → aggiungi <code id="dom"></code>. Niente chiave nel codice.<br>
+  &nbsp;&nbsp;• <b>chiave</b> — la generi nello stesso pannello e la incolli qui sopra.
+  Resta solo su questo telefono.</p>
 </div>
 
 <script src="https://cdnjs.cloudflare.com/ajax/libs/leaflet/1.9.4/leaflet.min.js"></script>
@@ -98,8 +101,7 @@ function opzioni(sel, scelto){
   STILI.forEach(function(s){
     var o = document.createElement('option');
     o.value = s.id;
-    o.textContent = s.nome + (s.key && !chiave ? '  — manca la chiave' : '');
-    o.disabled = s.key && !chiave;
+    o.textContent = s.nome;
     sel.appendChild(o);
   });
   sel.value = scelto;
@@ -122,9 +124,24 @@ function metti(mappa, vecchio, id, notaId){
   var s = STILI.filter(function(x){ return x.id === id; })[0];
   if (!s) return vecchio;
   if (vecchio) mappa.removeLayer(vecchio);
-  var url = s.url + (s.key ? '?api_key=' + encodeURIComponent(chiave) : '');
+  // La chiave si aggiunge SOLO se c'e'. Stadia accetta anche l'autenticazione
+  // per dominio: se hai autorizzato il tuo indirizzo nel loro pannello, le
+  // piastrelle arrivano lo stesso e nel codice non finisce nessun segreto.
+  var url = s.url + (s.key && chiave ? '?api_key=' + encodeURIComponent(chiave) : '');
   var l = L.tileLayer(url, {attribution: s.attr, maxZoom: 19}).addTo(mappa);
-  document.getElementById(notaId).textContent = s.nota;
+  var nota = document.getElementById(notaId);
+  nota.textContent = s.nota;
+  nota.style.color = '#8E8E93';
+  if (s.key){
+    var fallito = false;
+    l.on('tileerror', function(){
+      if (fallito) return; fallito = true;
+      nota.style.color = '#C0392B';
+      nota.textContent = 'Le piastrelle non arrivano: o incolli la chiave qui sopra, ' +
+        'oppure autorizzi questo dominio nel pannello Stadia (Manage Properties → ' +
+        'Authentication Configuration). Il dominio da inserire e\u0300: ' + location.hostname;
+    });
+  }
   return l;
 }
 
@@ -151,6 +168,7 @@ document.getElementById('usa').onclick = function(){
   }
 };
 
+var d = document.getElementById('dom'); if (d) d.textContent = location.hostname;
 opzioni(document.getElementById('sa'), 'esri');
 opzioni(document.getElementById('sb'), 'osm');
 livA = metti(A, null, 'esri', 'na');
