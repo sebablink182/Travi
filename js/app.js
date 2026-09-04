@@ -100,7 +100,35 @@ import {
   var loginForm = document.getElementById("login-form");
   var loginError = document.getElementById("login-error");
   var loginSubmit = document.getElementById("login-submit");
-  var signoutLink = document.getElementById("signout-link");
+  // L'uscita dall'account non ha più un suo posto nella Home (lasciava un vuoto
+  // in fondo alla pagina per un tasto che non si tocca mai). Ora è un gesto
+  // nascosto ma non irreversibile: si tiene premuto il logo Travi in alto per
+  // un secondo, e si conferma toccandolo di nuovo entro cinque secondi.
+  var uscitaArmata = false, uscitaTimer = null, pressTimer = null;
+  function armaUscita() {
+    uscitaArmata = true;
+    toast("Tocca ancora il logo per uscire da questo dispositivo");
+    clearTimeout(uscitaTimer);
+    uscitaTimer = setTimeout(function () { uscitaArmata = false; }, 5000);
+  }
+  function esciDavvero() {
+    uscitaArmata = false;
+    if (unsubState) { unsubState(); unsubState = null; }
+    signOut(auth);
+  }
+  var brandHome = document.querySelector("#view-home .brand");
+  if (brandHome) {
+    brandHome.addEventListener("touchstart", function () {
+      if (uscitaArmata) { esciDavvero(); return; }
+      pressTimer = setTimeout(armaUscita, 900);
+    }, { passive: true });
+    ["touchend", "touchmove", "touchcancel"].forEach(function (ev) {
+      brandHome.addEventListener(ev, function () { clearTimeout(pressTimer); }, { passive: true });
+    });
+    brandHome.addEventListener("click", function () {
+      if (uscitaArmata) esciDavvero();
+    });
+  }
 
   loginForm.addEventListener("submit", function (e) {
     e.preventDefault();
@@ -130,11 +158,6 @@ import {
       loginSubmit.disabled = false;
       loginSubmit.textContent = "Accedi";
     });
-  });
-
-  signoutLink.addEventListener("click", function () {
-    if (unsubState) { unsubState(); unsubState = null; }
-    signOut(auth);
   });
 
   onAuthStateChanged(auth, function (user) {
@@ -539,7 +562,7 @@ import {
   // Il fondo mappa è autorizzato per dominio nel pannello Stadia, quindi qui
   // non c'è nessuna chiave: se un giorno le piastrelle sparissero, è là che va
   // aggiunto il dominio nuovo.
-  var mappa = null, stratoTappe = null, markerRefs = [], mapSelIdx = 0, mapLastDay = null;
+  var mappa = null, stratoTappe = null, markerRefs = [], mapSelIdx = 0, mapLastDay = null, mapPunti = [];
 
   function creaMappa() {
     if (mappa || typeof L === "undefined") return mappa;
@@ -583,9 +606,10 @@ import {
     // delle tappe, così mappa e card in basso si leggono insieme.
     var m = creaMappa();
     markerRefs = [];
+    mapPunti = [];
     if (m) {
       stratoTappe.clearLayers();
-      var punti = [];
+      var punti = mapPunti;
       list.forEach(function (s, i) {
         if (s.lat == null || s.lon == null) return;
         var mk = L.marker([s.lat, s.lon], { icon: iconaPin(i + 1, i === mapSelIdx) }).addTo(stratoTappe);
@@ -597,14 +621,22 @@ import {
         L.polyline(punti, { color: "#F5503C", weight: 3, opacity: .6, dashArray: "6 7" })
           .addTo(stratoTappe);
       }
-      if (punti.length) {
-        m.invalidateSize();
-        if (punti.length === 1) m.setView(punti[0], 15);
-        else m.fitBounds(punti, { padding: [34, 60] });
-      }
+      inquadraGiornata();
     }
 
     aggiornaMapCard(list);
+  }
+
+  // Inquadratura di partenza: TUTTE le tappe del giorno nello schermo, senza
+  // doverle cercare a mano con zoom avanti e indietro. Va rifatta quando la
+  // pagina Mappa torna visibile: se la mappa viene disegnata mentre la vista è
+  // nascosta, Leaflet misura un contenitore alto zero e l'inquadratura esce
+  // sbagliata (era questo il motivo per cui bisognava sempre rizoomare).
+  function inquadraGiornata() {
+    if (!mappa || !mapPunti.length) return;
+    mappa.invalidateSize();
+    if (mapPunti.length === 1) mappa.setView(mapPunti[0], 15);
+    else mappa.fitBounds(mapPunti, { padding: [40, 70] });
   }
 
   // Tocco su un pin, o sulle frecce della card: cambia solo quale tappa è
@@ -616,7 +648,12 @@ import {
     });
     var list = stopsForDay(selectedDay.itinerario);
     var s = list[idx];
-    if (s && s.lat != null && mappa) mappa.panTo([s.lat, s.lon]);
+    // Toccare un numero entra nel dettaglio di quella tappa: si vede la via,
+    // non più la città intera. Il tasto in basso a destra rimette in quadro
+    // tutta la giornata.
+    if (s && s.lat != null && mappa) {
+      mappa.setView([s.lat, s.lon], Math.max(mappa.getZoom(), 16), { animate: true });
+    }
     aggiornaMapCard(list);
   }
 
@@ -805,6 +842,7 @@ import {
   // La pillola in alto RIPORTA il giorno scelto in Itinerario, non lo sceglie:
   // toccarla porta all'Itinerario, dove il giorno si cambia davvero.
   document.getElementById("map-daypill").addEventListener("click", function () { switchView("itinerario"); });
+  document.getElementById("map-fit").addEventListener("click", inquadraGiornata);
 
   /* ---------- budget extra ---------- */
   function fmtEuro(n) {
@@ -859,7 +897,7 @@ import {
     // Leaflet misura il contenitore quando lo crea: se la vista era nascosta
     // trova altezza zero e disegna la mappa storta. Va rimisurata ogni volta
     // che la pagina Mappa torna visibile.
-    if (name === "mappa" && mappa) { setTimeout(function () { mappa.invalidateSize(); }, 60); }
+    if (name === "mappa" && mappa) { setTimeout(inquadraGiornata, 60); }
   }
   document.querySelectorAll(".tab").forEach(function (t) {
     t.addEventListener("click", function () { switchView(t.dataset.view); });
@@ -986,14 +1024,14 @@ import {
 
     // Link rapidi verso Google/Apple Maps: solo su una tappa che già esiste
     // (per una nuova non c'è ancora niente da aprire).
-    var quicklinks = document.getElementById("quicklinks");
+    var gmaps = document.getElementById("link-gmaps");
     if (s) {
-      quicklinks.hidden = false;
+      gmaps.hidden = false;
       var gq = encodeURIComponent(s.q || (s.title + " " + (s.sub || "")));
-      document.getElementById("link-gmaps").href = "https://www.google.com/maps/search/?api=1&query=" + gq;
+      gmaps.href = "https://www.google.com/maps/search/?api=1&query=" + gq;
       document.getElementById("link-amaps").href = "https://maps.apple.com/?q=" + gq;
     } else {
-      quicklinks.hidden = true;
+      gmaps.hidden = true;
     }
 
     // Testa illustrata: foto + nome + zona. Solo su una tappa che esiste già.

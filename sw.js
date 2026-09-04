@@ -5,7 +5,7 @@
 // Il numero nel nome della cache va alzato ogni volta che questo file cambia:
 // è quello che fa sì che una PWA già installata sul telefono butti via la
 // cache vecchia invece di restare bloccata su una copia obsoleta dei file.
-const CACHE_NAME = "travi-shell-v11";
+const CACHE_NAME = "travi-shell-v12";
 const SHELL_FILES = [
   "./",
   "./index.html",
