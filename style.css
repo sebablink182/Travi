@@ -668,3 +668,16 @@
     font-size:15px; padding:2px 4px;
   }
   .prova-barra + .stato-g{ margin-top:8px; }
+
+  .field .aiuto{ font: var(--t-caption); color: var(--text-muted); margin-top:6px; line-height:1.45; }
+  /* pallino di priorità accanto al titolo nella lista delle tappe */
+  .prio-mark{ display:inline-flex; vertical-align:-2px; margin-right:5px; }
+  .prio-mark svg{ width:13px; height:13px; }
+  .prio-top{ color: var(--accent); }
+  .prio-extra{ color: var(--text-faint); }
+
+  .consiglio .sposta{
+    display:block; width:100%; margin-top:9px; padding:9px;
+    border:none; border-radius:var(--r-sm); background:var(--accent); color:#fff;
+    font: var(--t-footnote); font-weight:700; font-family:var(--font-ui);
+  }

@@ -25,6 +25,12 @@ import {
     { id: "transfer", label: "Trasferimento", icon: "ic-train" },
     { id: "hotel", label: "Hotel", icon: "ic-bed" },
   ];
+  // Priorità: quanto ci tenete. Vedi js/giornata.js per come pesa nei consigli.
+  var PRIORITA = [
+    { id: "top",   label: "Imperdibile", icon: "ic-star" },
+    { id: "norm",  label: "Normale",     icon: "ic-dot" },
+    { id: "extra", label: "Se avanza",   icon: "ic-dash" },
+  ];
   var TRANSPORTS = [
     { id: "walk", label: "A piedi", icon: "ic-walk" },
     { id: "metro", label: "Metro/Treno", icon: "ic-train" },
@@ -337,16 +343,40 @@ import {
               "</div>" + eti + "</div>";
     });
 
+    var ETI_PRIO = { top: "imperdibile", norm: "normale", extra: "se avanza" };
     var sug = e.suggerimento;
     if (sug && sug.tipo === "sacrifica") {
-      html += '<div class="consiglio">Se rinunciate a <b>' + escapeHtml(sug.titolo) + "</b> (" +
-              sug.durata + " min) riuscite ancora a fare <b>" +
-              sug.problemiRisolti.map(escapeHtml).join("</b>, <b>") + "</b>.</div>";
+      var salvate = sug.problemiRisolti.map(function (p) {
+        return "<b>" + escapeHtml(p.title) + "</b>" +
+               (p.prio === "top" ? " (imperdibile)" : "");
+      }).join(", ");
+      html += '<div class="consiglio">Rinunciando a <b>' + escapeHtml(sug.titolo) + "</b> (" +
+              ETI_PRIO[sug.prio] + ", " + sug.durata + " min) arrivate ancora a " + salvate + ".</div>";
     } else if (sug && sug.tipo === "rinuncia") {
-      html += '<div class="consiglio">Non c\'è più niente da tagliare che basti: <b>' +
-              sug.perse.map(escapeHtml).join("</b> e <b>") +
-              "</b> conviene spostarli a un altro giorno.</div>";
+      var top = sug.imperdibiliPerse || [];
+      html += '<div class="consiglio">' +
+        (top.length
+          ? "Non c'è più niente da tagliare, e fra quelle che saltano c'è <b>" +
+            top.map(function (p) { return escapeHtml(p.title); }).join("</b> e <b>") + "</b>."
+          : "Non c'è più niente da tagliare che basti: <b>" +
+            sug.perse.map(function (p) { return escapeHtml(p.title); }).join("</b> e <b>") +
+            "</b> non ci stanno più.") + "</div>";
+
+      // Travi conosce tutti i giorni: invece di lasciare la decisione a voi in
+      // mezzo alla strada, guarda se un altro giorno nella stessa città ha
+      // spazio davvero — verificato, non ipotizzato.
+      var daSpostare = (top.length ? top : sug.perse)[0];
+      var alt = trovaGiorniAlternativi(daSpostare.id, dayId);
+      if (alt && alt.length) {
+        var a = alt[0];
+        html += '<div class="consiglio">Il <b>' + a.date.slice(8) + "/" + a.date.slice(5, 7) +
+          "</b> siete ancora a " + escapeHtml(a.city) + " e quel giorno finirebbe alle " +
+          a.fineCon + ": c'è spazio per <b>" + escapeHtml(daSpostare.title) + "</b>." +
+          '<button class="sposta" data-tappa="' + daSpostare.id + '" data-giorno="' + a.id +
+          '" data-dopo="' + (a.dopoDi ? escapeHtml(a.dopoDi) : "") + '">Sposta lì</button></div>';
+      }
     }
+
     if (!simula.attiva) {
       html += '<button class="prova-apri dentro" id="prova-apri">Prova a un altro orario</button>';
     }
@@ -354,7 +384,53 @@ import {
     agganciaProva(dayId, list);
   }
 
+  // Prepara per il motore tutti i giorni del viaggio con le loro tappe, così
+  // può cercare dove ricollocare una tappa che oggi non ci sta.
+  function trovaGiorniAlternativi(stopId, dayId) {
+    if (!window.Giornata || !window.Giornata.giorniAlternativi) return [];
+    var tappa = allStops().find(function (x) { return x.id === stopId; });
+    var oggi = dayById(dayId);
+    if (!tappa || !oggi) return [];
+    var giorni = DAYS.map(function (d) {
+      return { id: d.id, date: d.date, city: d.city, tappe: stopsForDay(d.id) };
+    });
+    return window.Giornata.giorniAlternativi(tappa, giorni, dayId, window.TRAVI_ORARI, oggi.city);
+  }
+
+  // Sposta davvero la tappa: cambia il giorno e le dà un orario coerente con
+  // la posizione trovata dal motore, così non finisce in fondo alla lista.
+  function spostaTappa(stopId, versoGiorno, dopoTitolo) {
+    var tappa = allStops().find(function (x) { return x.id === stopId; });
+    if (!tappa) return;
+    var dest = stopsForDay(versoGiorno);
+    var nuovaOra = "09:00";
+    if (dopoTitolo) {
+      var rif = dest.find(function (x) { return x.title === dopoTitolo; });
+      if (rif) {
+        var m = window.Giornata.min(rif.time) + (rif.dur || 0) + 15;
+        nuovaOra = window.Giornata.hhmm(m).replace("+1", "");
+      }
+    } else if (dest.length) {
+      nuovaOra = window.Giornata.hhmm(Math.max(0, window.Giornata.min(dest[0].time) - 60));
+    }
+    var patch = { day: versoGiorno, time: nuovaOra };
+    var isCustom = state.custom.some(function (c) { return c.id === stopId; });
+    if (isCustom) {
+      state.custom = state.custom.map(function (c) {
+        return c.id === stopId ? Object.assign({}, c, patch) : c;
+      });
+    } else {
+      state.overrides[stopId] = Object.assign({}, state.overrides[stopId] || {}, patch);
+    }
+    persist();
+    toast("Spostata al " + (dayById(versoGiorno) || {}).date);
+  }
+
   function agganciaProva(dayId, list) {
+    var sp = document.querySelector(".consiglio .sposta");
+    if (sp) sp.onclick = function () {
+      spostaTappa(this.dataset.tappa, this.dataset.giorno, this.dataset.dopo || null);
+    };
     var apri = document.getElementById("prova-apri");
     if (apri) apri.onclick = function () {
       simula.attiva = true; simula.minuti = oraDiAdesso();
@@ -672,6 +748,7 @@ import {
   }
   buildPickrow("f-category", CATS);
   buildPickrow("f-transport", TRANSPORTS);
+  buildPickrow("f-priorita", PRIORITA);
 
   function selectPick(containerId, id) {
     document.getElementById(containerId).querySelectorAll(".pick").forEach(function (p) {
@@ -696,6 +773,10 @@ import {
     document.getElementById("f-notes").value = s ? s.notes || "" : "";
     selectPick("f-category", s ? s.cat : "experience");
     selectPick("f-transport", s ? s.tmode : "walk");
+    // Se la tappa non ha una priorità sua, si mostra quella dedotta dalla
+    // categoria: così il campo non è mai vuoto e si capisce cosa farà il motore.
+    selectPick("f-priorita", (s && window.Giornata) ? window.Giornata.prioDi(s)
+               : (s && s.prio) || "norm");
     var done = !!(s && s.done);
     document.getElementById("f-done").classList.toggle("on", done);
     document.getElementById("btn-delete").style.display = (s && !locked) ? "block" : "none";
@@ -772,6 +853,7 @@ import {
       notes: document.getElementById("f-notes").value.trim(),
       cat: getPick("f-category") || "experience",
       tmode: getPick("f-transport") || "walk",
+      prio: getPick("f-priorita") || "norm",
       done: document.getElementById("f-done").classList.contains("on"),
     };
     if (editingId) {

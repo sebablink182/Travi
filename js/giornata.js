@@ -21,6 +21,24 @@
   var GIRO = 1.35;       // le strade non sono in linea d'aria: +35% sulla distanza diretta
   var MARGINE_STRETTA = 20; // minuti: sotto questo margine dalla chiusura, "ce la fai per un pelo"
 
+  /* PRIORITÀ — quanto tenete a una tappa. Decide cosa il motore è disposto a
+     sacrificare quando la giornata non ci sta.
+       top   imperdibile   non viene MAI proposta come rinuncia
+       norm  normale       il piano: sacrificabile se serve
+       extra se avanza     la prima a cadere, sempre
+     Se una tappa non ha priorità sua, si deduce dalla categoria: così non
+     bisogna compilarne 52 a mano, se ne toccano una dozzina. */
+  var PRIO_DA_CATEGORIA = {
+    shopping: "extra", food: "norm", temple: "norm", nature: "norm",
+    view: "norm", experience: "norm", transfer: "norm", hotel: "norm"
+  };
+  var PESO = { top: 0, norm: 1, extra: 2 }; // ordine in cui si è disposti a tagliare
+
+  function prioDi(t) {
+    if (t.prio && PESO[t.prio] !== undefined) return t.prio;
+    return PRIO_DA_CATEGORIA[t.cat] || "norm";
+  }
+
   function min(hhmm) {
     if (!hhmm) return null;
     var p = String(hhmm).split(":");
@@ -96,10 +114,29 @@
 
     restanti.forEach(function (t, i) {
       var rif = i === 0 ? precedente : restanti[i - 1];
-      var piedi = rif ? minutiAPiedi(rif, t) : null;
-      // Quanto ci si mette ad arrivare: il valore previsto nei dati se c'è,
-      // altrimenti la stima a piedi dalle coordinate.
-      var viaggio = (t.tmin != null && t.tmin > 0) ? t.tmin : (piedi != null ? piedi : 0);
+      var km = rif ? kmTra(rif, t) : null;
+      // La stima a piedi vale solo per distanze davvero percorribili a piedi.
+      // Senza questo controllo, una tappa di trasferimento senza tempo
+      // compilato faceva calcolare la camminata Kanazawa→Kyoto: 230 km,
+      // cinquanta ore, e l'intera giornata andava a farsi benedire.
+      var piedi = (km != null && km <= MAX_A_PIEDI_KM) ? minutiAPiedi(rif, t) : null;
+
+      // Quanto ci si mette ad arrivare, in ordine di attendibilità:
+      //   1. il tempo previsto nei dati, se c'è
+      //   2. la stima a piedi, se la distanza è pedonale
+      //   3. altrimenti ci si fida del piano: lo scarto fra l'orario previsto
+      //      di questa tappa e la fine di quella prima. È il caso dei treni
+      //      fra città, dove il piano sa qualcosa che le coordinate non sanno.
+      var viaggio, stimaDa;
+      if (t.tmin != null && t.tmin > 0) { viaggio = t.tmin; stimaDa = "dati"; }
+      else if (piedi != null) { viaggio = piedi; stimaDa = "piedi"; }
+      else {
+        var oraQui = min(t.time), oraPrima = rif ? min(rif.time) : null;
+        var durPrima = rif ? (rif.dur || 0) : 0;
+        viaggio = (oraQui != null && oraPrima != null)
+          ? Math.max(0, oraQui - (oraPrima + durPrima)) : 0;
+        stimaDa = "piano";
+      }
 
       var arrivo = cursore + viaggio;
 
@@ -134,7 +171,7 @@
         pianificato: pianificato, pianificatoOra: t.time,
         arrivo: arrivo, arrivoOra: hhmm(arrivo),
         fine: fine, fineOra: hhmm(fine),
-        viaggio: viaggio, piedi: piedi, attesa: attesa,
+        viaggio: viaggio, piedi: piedi, stimaDa: stimaDa, km: km, attesa: attesa,
         chiude: chiude, chiudeOra: chiude != null ? hhmm(chiude) : null,
         sempreAperta: o.tipo === "sempre",
         verdetto: verdetto, margine: margine, scarto: scarto,
@@ -173,9 +210,10 @@
     // Rinunciare alla tappa che NON si fa in tempo non è un consiglio: è la
     // constatazione del problema. Il consiglio utile è cosa sacrificare PRIMA
     // per arrivare ancora in tempo a quella che si vuole salvare. Quindi le
-    // tappe in difficoltà non entrano fra le candidate al taglio.
+    // tappe in difficoltà non entrano fra le candidate al taglio — e nemmeno
+    // le imperdibili, che è il senso stesso di averle segnate così.
     var candidate = tappe.filter(function (t) {
-      return !t.done && !t.locked && inGuaio.indexOf(t.id) === -1;
+      return !t.done && !t.locked && inGuaio.indexOf(t.id) === -1 && prioDi(t) !== "top";
     });
     var migliore = null;
 
@@ -185,34 +223,109 @@
       var prova = calcola(senza, adesso, orari, false);
       var risolti = base.problemi.length - prova.problemi.length;
       if (risolti <= 0) return;
-      // a parità di problemi risolti, si rinuncia alla tappa più corta
-      if (!migliore || risolti > migliore.risolve ||
-          (risolti === migliore.risolve && (c.dur || 0) < migliore.durata)) {
-        migliore = {
-          tipo: "sacrifica",
-          salta: c.id, titolo: c.title, durata: c.dur || 0,
-          risolve: risolti, restano: prova.problemi.length,
-          problemiRisolti: base.problemi.filter(function (p) {
-            return !prova.problemi.some(function (q) { return q.id === p.id; });
-          }).map(function (p) { return p.title; })
-        };
+
+      var cand = {
+        tipo: "sacrifica",
+        salta: c.id, titolo: c.title, durata: c.dur || 0, prio: prioDi(c),
+        risolve: risolti, restano: prova.problemi.length,
+        problemiRisolti: base.problemi.filter(function (p) {
+          return !prova.problemi.some(function (q) { return q.id === p.id; });
+        }).map(function (p) {
+          var t = tappe.find(function (x) { return x.id === p.id; });
+          return { title: p.title, prio: t ? prioDi(t) : "norm" };
+        })
+      };
+      // Si sceglie: prima chi risolve di più; a pari merito si sacrifica la
+      // tappa a cui si tiene di meno; a pari priorità, la più corta.
+      if (!migliore ||
+          cand.risolve > migliore.risolve ||
+          (cand.risolve === migliore.risolve && PESO[cand.prio] > PESO[migliore.prio]) ||
+          (cand.risolve === migliore.risolve && cand.prio === migliore.prio &&
+           cand.durata < migliore.durata)) {
+        migliore = cand;
       }
     });
 
-    // Nessun taglio a monte salva la situazione: allora il consiglio onesto è
-    // rimandare o togliere le tappe che non si fanno più in tempo.
-    if (!migliore) {
-      migliore = {
-        tipo: "rinuncia",
-        perse: base.problemi.map(function (p) { return p.title; }),
-        risolve: 0
-      };
-    }
-    return migliore;
+    if (migliore) return migliore;
+
+    // Nessun taglio a monte basta: allora si dice quali tappe non si fanno più,
+    // segnalando se fra queste ce n'è una imperdibile — è un'informazione
+    // diversa da "salta un mercato".
+    var perse = base.problemi.map(function (p) {
+      var t = tappe.find(function (x) { return x.id === p.id; });
+      return { id: p.id, title: p.title, prio: t ? prioDi(t) : "norm" };
+    });
+    return {
+      tipo: "rinuncia",
+      perse: perse,
+      imperdibiliPerse: perse.filter(function (p) { return p.prio === "top"; }),
+      risolve: 0
+    };
+  }
+
+  /* -------------------------------------------------------------------------
+     DOVE SPOSTARLA
+     Quando una tappa non ci sta più oggi, Travi conosce tutti i giorni del
+     viaggio: può guardare se ce n'è un altro nella stessa città con spazio
+     sufficiente, invece di lasciarvi decidere al volo in mezzo alla strada.
+
+       tappa   = quella da ricollocare
+       giorni  = [{ id, date, city, tappe: [...] }] tutti i giorni del viaggio
+       oggiId  = il giorno da cui la si toglie
+     Restituisce i giorni possibili, dal più comodo in poi, o [] se nessuno.
+     ------------------------------------------------------------------------- */
+  var MAX_A_PIEDI_KM = 5;  // oltre questa distanza "a piedi" non è più una stima, è una fantasia
+  var ORA_DECENTE = 21 * 60; // oltre le 21 una giornata non "ha spazio": è solo lunga
+
+  function giorniAlternativi(tappa, giorni, oggiId, orari, cittaOggi) {
+    var esiti = [];
+    giorni.forEach(function (g) {
+      if (g.id === oggiId) return;
+      if (cittaOggi && g.city !== cittaOggi) return;  // in un'altra città non ha senso
+      if (g.date && g.date < oggiISO()) return;        // i giorni passati non servono
+      if (!g.tappe.length) return;
+
+      var prima = calcola(g.tappe, 0, orari, false);
+      var meglio = null;
+
+      // Si prova a infilarla in OGNI posizione, non solo in coda: un mercato
+      // che chiude alle 18 sta bene al mattino e non la sera, e cercando solo
+      // in fondo lo si scartava per niente.
+      for (var i = 0; i <= g.tappe.length; i++) {
+        var con = g.tappe.slice();
+        con.splice(i, 0, Object.assign({}, tappa, { done: false }));
+        var dopo = calcola(con, 0, orari, false);
+        if (dopo.problemi.length > prima.problemi.length) continue;
+        if (min(dopo.finePrevista) > ORA_DECENTE || dopo.finePrevista.indexOf("+1") > -1) continue;
+        if (!meglio || min(dopo.finePrevista) < min(meglio.fineCon)) {
+          meglio = { posizione: i, fineCon: dopo.finePrevista };
+        }
+      }
+      if (!meglio) return;
+
+      esiti.push({
+        id: g.id, date: g.date, city: g.city,
+        posizione: meglio.posizione,
+        dopoDi: meglio.posizione > 0 ? g.tappe[meglio.posizione - 1].title : null,
+        fineSenza: prima.finePrevista, fineCon: meglio.fineCon,
+        tappeQuelGiorno: g.tappe.length
+      });
+    });
+    esiti.sort(function (a, b) { return min(a.fineCon) - min(b.fineCon); });
+    return esiti;
+  }
+
+  function oggiISO() {
+    var d = new Date();
+    return d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") +
+           "-" + String(d.getDate()).padStart(2, "0");
   }
 
   window.Giornata = {
     calcola: calcola,
+    prioDi: prioDi,
+    giorniAlternativi: giorniAlternativi,
+    PRIO_DA_CATEGORIA: PRIO_DA_CATEGORIA,
     minutiAPiedi: minutiAPiedi,
     kmTra: kmTra,
     min: min,
