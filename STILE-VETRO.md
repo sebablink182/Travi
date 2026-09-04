@@ -45,22 +45,20 @@ va rivisto: si riapre `pillola.html`, si ricalibra guardando, e si cambiano
 `--vetro-chiaro-bg` + `--vetro-chiaro-testo` mantengono la stessa fisica
 (sfocatura, bordo, ombra) ma con velo chiaro e testo scuro.
 
-**La regola per scegliere fra le due, decisa il 4/09/2026: comanda il fondo, non
-il gusto.** Il velo scuro al 22% sopra un fondo chiaro (`#FAFAF9`) dà una
-pillola grigia intorno a `#CACACA`: con il testo bianco previsto dallo standard
-è illeggibile. Quindi:
+**Aggiornamento del 4/09/2026 — decisione di Seb:** lo standard (velo scuro,
+testo bianco) vale **anche sui fondi chiari**. Avevo proposto di passare alla
+variante chiara dove il vetro sta su fondo bianco, per una questione di
+contrasto: proposta scartata. Il vetro dell'app è uno solo, e si riconosce
+proprio perché è sempre lo stesso — la pillola dei giorni deve sembrare la
+stessa cosa della pillola di navigazione, non una sua cugina.
 
-| il vetro sta sopra… | variante | testo |
-|---|---|---|
-| foto, contenuti scuri, la mappa vista dall'alto in notturna | standard (velo scuro) | bianco |
-| il fondo chiaro dell'app, la mappa Alidade Smooth (quasi bianca) | chiara | `--vetro-chiaro-testo` |
+Quindi la variante chiara resta **solo** dove era stata scelta fin dall'inizio:
+la card del meteo sopra la foto della Home.
 
-Non è uno scostamento dallo standard: è lo stesso materiale — stessa sfocatura,
-stesso bordo, stessa ombra — nella variante che il fondo rende leggibile. Quello
-che **non** si fa è inventare numeri nuovi per un caso particolare.
-
-Su fondo chiaro il bordo bianco al 30% sparisce (bianco su bianco): lì si usa
-`1px solid rgba(20,14,10,.10)`, il minimo per far vedere il filo del vetro.
+Nota tecnica, per chi legge in futuro e pensa a un errore: il velo scuro al 22%
+sopra `#FAFAF9` dà un grigio chiaro, e il testo bianco sopra ha poco contrasto.
+È una scelta estetica presa guardando il telefono vero, non una svista — la
+stessa che vale per le etichette della pillola di navigazione.
 
 ## Perché la sfocatura è così bassa
 
@@ -74,17 +72,18 @@ finto. La trasparenza da sola non basta: serve che si **capisca** cosa passa.
 
 ## Dove è applicato oggi
 
-Standard (velo scuro, testo bianco) — tutti sopra la foto o contenuti scuri:
+Standard (velo scuro, testo bianco) — ovunque, qualunque sia il fondo:
 
 - `.tabbar-inner` — la pillola di navigazione (è l'elemento su cui è stato calibrato)
 - `.icon-btn.glass` — i bottoni tondi sopra la foto della Home
 - `.sheet-hero-prio` — l'etichetta "Imperdibile" sopra la foto nel foglio tappa
-
-Variante chiara (velo chiaro, testo scuro) — tutti sopra fondi chiari:
-
-- `.weather-card` — la card del meteo sopra la parte chiara della foto
-- `.daypill` — le pillole dei giorni in Itinerario (attiva: piena d'accento)
+- `.daypill` — le pillole dei giorni in Itinerario (attiva: piena d'accento,
+  come il tab attivo dentro la pillola di navigazione)
 - `.map-daypill` — la pillola del giorno sopra la mappa
+
+Variante chiara (velo chiaro, testo scuro), unico caso:
+
+- `.weather-card` — la card del meteo sopra la foto della Home
 
 Fuori standard di proposito, perché non sono vetro sospeso ma superfici piene:
 

@@ -428,19 +428,15 @@
   .banner b{ color:var(--text); }
 
   /* ---------- day selector ---------- */
-  /* Stessa costruzione della pillola di navigazione: UN contenitore di vetro,
-     e dentro le voci. Prima erano sei pillole separate, ognuna con la sua
-     ombra — e l'ombra di quella selezionata cadeva sulla card bianca sotto,
-     rendendo evidente che erano due piani diversi. Ora l'ombra è una sola,
-     del contenitore, e cortissima. */
+  /* Ogni giorno è una pillola a sé, con lo standard VETRO esatto — lo stesso
+     materiale della pillola di navigazione in fondo allo schermo (vedi il
+     blocco VETRO in :root e STILE-VETRO.md). Nessun numero locale: se un
+     giorno il vetro si ricalibra, questi si adeguano da soli.
+     Il padding in fondo è generoso di proposito: l'ombra del vetro deve
+     spegnersi sullo sfondo della pagina e non cadere sulla card sotto —
+     era quello a far sembrare le pillole "appiccicate" a un altro piano. */
   .dayrow{
-    display:flex; gap:3px; overflow-x:auto; margin: 12px 16px 0; padding:5px;
-    background: var(--vetro-chiaro-bg);
-    backdrop-filter: var(--vetro-filtro);
-    -webkit-backdrop-filter: var(--vetro-filtro);
-    border: 1px solid rgba(20,14,10,.08);
-    border-radius: var(--r-pill);
-    box-shadow: 0 2px 6px -4px rgba(20,14,10,.18);
+    display:flex; gap:8px; overflow-x:auto; padding: 14px 16px 22px;
     scrollbar-width:none; touch-action:pan-x;
   }
   .dayrow::-webkit-scrollbar{ display:none; }
@@ -452,15 +448,20 @@
      variante giusta per il fondo. La pillola attiva resta piena d'accento,
      come il tab attivo nella barra di navigazione. */
   .daypill{
-    flex:none; width:50px; padding:7px 0 6px; border-radius: var(--r-pill);
-    background:transparent; border:none; box-shadow:none;
+    flex:none; width:54px; padding:9px 0 8px; border-radius: var(--r-pill);
+    background: var(--vetro-bg);
+    backdrop-filter: var(--vetro-filtro);
+    -webkit-backdrop-filter: var(--vetro-filtro);
+    border: var(--vetro-bordo);
+    box-shadow: var(--vetro-ombra);
+    color: var(--vetro-testo);
     text-align:center; cursor:pointer;
   }
-  .daypill .dw{ font-size:.6rem; text-transform:uppercase; letter-spacing:.04em; color:var(--text-muted); }
-  .daypill .dn{ font-family:var(--font-display); font-size:1.1rem; margin-top:1px; color: var(--vetro-chiaro-testo); }
-  .daypill.active{ background: var(--accent); box-shadow:none; }
-  .daypill.active .dw{ color:#fff; opacity:.8; }
-  .daypill.active .dn{ color:#fff; }
+  .daypill .dw{ font-size:.62rem; text-transform:uppercase; letter-spacing:.04em; color: var(--vetro-testo); }
+  .daypill .dn{ font-family:var(--font-display); font-size:1.15rem; margin-top:1px; color: var(--vetro-testo); }
+  /* Giorno attivo: riempimento d'accento dentro la pillola, esattamente come
+     il tab attivo dentro la pillola di navigazione. */
+  .daypill.active{ background: var(--accent); }
   .city-heading{ padding: 10px 16px 0; display:flex; align-items:baseline; gap:8px; }
   .city-heading h2{ margin:0; font-size:1.3rem; }
   .city-heading span{ font-size:.78rem; color:var(--text-muted); }
@@ -552,8 +553,8 @@
   }
   .map-daypill{
     pointer-events:auto; cursor:pointer;
-    background: var(--vetro-chiaro-bg); backdrop-filter: var(--vetro-filtro); -webkit-backdrop-filter: var(--vetro-filtro);
-    border: 1px solid rgba(20,14,10,.10); box-shadow: var(--vetro-ombra); color: var(--vetro-chiaro-testo);
+    background: var(--vetro-bg); backdrop-filter: var(--vetro-filtro); -webkit-backdrop-filter: var(--vetro-filtro);
+    border: var(--vetro-bordo); box-shadow: var(--vetro-ombra); color: var(--vetro-testo);
     border-radius: var(--r-pill); padding:8px 18px; font-size:.82rem; font-weight:600;
   }
 
@@ -953,4 +954,12 @@
   .assign-manuale input[type=time]{
     width:100%; border:1px solid var(--border); background:var(--surface-2); border-radius:var(--r-md);
     padding:11px 12px; font-family:inherit; font-size:.92rem; color:var(--text); margin-bottom:12px;
+  }
+
+  /* Interruttore invisibile: unico modo per ottenere un feedback aptico da una
+     web app su iOS (vedi la nota in js/app.js). Deve restare "disegnato" —
+     display:none lo renderebbe inerte — quindi sta fuori schermo. */
+  #haptic-switch, #haptic-label{
+    position:fixed; left:-9999px; bottom:0; width:1px; height:1px;
+    opacity:0; pointer-events:none;
   }

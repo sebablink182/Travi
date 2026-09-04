@@ -289,6 +289,41 @@ import {
   function timeToMin(t) { var p = t.split(":"); return parseInt(p[0], 10) * 60 + parseInt(p[1], 10); }
   function minToTime(m) { m = ((m % 1440) + 1440) % 1440; var h = Math.floor(m / 60), mm = m % 60; return String(h).padStart(2, "0") + ":" + String(mm).padStart(2, "0"); }
 
+  /* ---------- feedback aptico ----------
+     iOS non espone nessuna API di vibrazione alle app web: navigator.vibrate
+     esiste su Android, non su Safari. L'unica strada praticabile è l'inganno
+     dell'interruttore nascosto (vedi index.html): da iOS 17.4 un
+     <input type="checkbox" switch> fa un piccolo tocco aptico di sistema
+     quando cambia stato. Qui si prova prima la via ufficiale e poi quella —
+     se nessuna delle due è disponibile non succede niente e non si rompe nulla.
+     Il colpo è volutamente cortissimo (7ms) e non può ripetersi più di ~18
+     volte al secondo: deve essere un accenno, non una vibrazione. */
+  var hapticLabel = document.getElementById("haptic-label");
+  var ultimoTic = 0;
+  function tic() {
+    var ora = Date.now();
+    if (ora - ultimoTic < 55) return;
+    ultimoTic = ora;
+    try { if (navigator.vibrate) navigator.vibrate(7); } catch (e) {}
+    try { if (hapticLabel) hapticLabel.click(); } catch (e) {}
+  }
+
+  // Un tocco ogni volta che scorrendo si passa da un giorno al successivo:
+  // il dito sente i giorni "scattare" invece di scivolare su niente.
+  function agganciaTicGiorni(el) {
+    if (!el) return;
+    var ultimoIndice = null;
+    el.addEventListener("scroll", function () {
+      var pill = el.querySelector(".daypill");
+      if (!pill) return;
+      var passo = pill.offsetWidth + 8; // larghezza pillola + gap (vedi .dayrow)
+      var i = Math.round(el.scrollLeft / passo);
+      if (ultimoIndice === null) { ultimoIndice = i; return; }
+      if (i !== ultimoIndice) { ultimoIndice = i; tic(); }
+    }, { passive: true });
+  }
+  agganciaTicGiorni(document.getElementById("dayrow-itin"));
+
   /* ---------- rendering ---------- */
   function renderDayRow(containerId, view) {
     var el = document.getElementById(containerId);
@@ -297,7 +332,7 @@ import {
       var pill = document.createElement("div");
       pill.className = "daypill" + (selectedDay[view] === d.id ? " active" : "");
       pill.innerHTML = '<div class="dw">' + weekdayShort(d.date) + '</div><div class="dn num">' + dayNum(d.date) + "</div>";
-      pill.addEventListener("click", function () { selectedDay[view] = d.id; renderAll(); });
+      pill.addEventListener("click", function () { tic(); selectedDay[view] = d.id; renderAll(); });
       el.appendChild(pill);
     });
   }
