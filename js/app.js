@@ -37,6 +37,14 @@ import {
     { id: "15", label: "15 min" }, { id: "30", label: "30" }, { id: "45", label: "45" },
     { id: "60", label: "1 h" }, { id: "90", label: "1½ h" }, { id: "120", label: "2 h+" }
   ];
+  // Tipi di prenotazione: quello che davvero si prenota in un viaggio così.
+  var PREN_TIPI = [
+    { id: "volo",  label: "Volo",       icon: "ic-plane" },
+    { id: "hotel", label: "Hotel",      icon: "ic-bed" },
+    { id: "treno", label: "Treno",      icon: "ic-train" },
+    { id: "attivita", label: "Attività", icon: "ic-star" },
+    { id: "altro", label: "Altro",      icon: "ic-doc" },
+  ];
   var TRANSPORTS = [
     { id: "walk", label: "A piedi", icon: "ic-walk" },
     { id: "metro", label: "Metro/Treno", icon: "ic-train" },
@@ -56,7 +64,7 @@ import {
   var SEED_STOPS = [];
   var dataLoaded = false;
 
-  var state = { overrides: {}, custom: [], removed: [], budget: [], favorites: [] };
+  var state = { overrides: {}, custom: [], removed: [], budget: [], favorites: [], bookings: [] };
   var BUDGET_WHO = [
     { id: "sebastian", label: "Sebastian" },
     { id: "alessandra", label: "Alessandra" },
@@ -100,65 +108,13 @@ import {
   var loginForm = document.getElementById("login-form");
   var loginError = document.getElementById("login-error");
   var loginSubmit = document.getElementById("login-submit");
-  // L'uscita dall'account non ha più un suo posto nella Home (lasciava un vuoto
-  // in fondo alla pagina per un tasto che non si tocca mai). Ora è un gesto
-  // nascosto ma non irreversibile: si tiene premuto il logo Travi in alto per
-  // un secondo, e si conferma toccandolo di nuovo entro cinque secondi.
-  var uscitaArmata = false, uscitaTimer = null, pressTimer = null;
-  function armaUscita() {
-    uscitaArmata = true;
-    toast("Tocca ancora il logo per uscire da questo dispositivo");
-    clearTimeout(uscitaTimer);
-    uscitaTimer = setTimeout(function () { uscitaArmata = false; }, 5000);
-  }
+  // L'uscita dall'account vive nel tab Altro (una riga con il suo tasto).
+  // Prima era un gesto nascosto sul logo: tolto quando Altro le ha dato un
+  // posto vero e visibile.
   function esciDavvero() {
-    uscitaArmata = false;
     if (unsubState) { unsubState(); unsubState = null; }
     signOut(auth);
   }
-  var brandHome = document.querySelector("#view-home .brand");
-  if (brandHome) {
-    brandHome.addEventListener("touchstart", function () {
-      if (uscitaArmata) { esciDavvero(); return; }
-      pressTimer = setTimeout(armaUscita, 900);
-    }, { passive: true });
-    ["touchend", "touchmove", "touchcancel"].forEach(function (ev) {
-      brandHome.addEventListener(ev, function () { clearTimeout(pressTimer); }, { passive: true });
-    });
-    brandHome.addEventListener("click", function () {
-      if (uscitaArmata) esciDavvero();
-    });
-  }
-
-  loginForm.addEventListener("submit", function (e) {
-    e.preventDefault();
-    // trim/lowercase per evitare falsi "password sbagliata" causati da autofill/tastiera
-    // del browser (spazi accidentali, maiuscola automatica a inizio email, ecc.):
-    // Firebase confronta comunque l'email senza distinguere maiuscole/minuscole.
-    var email = document.getElementById("login-email").value.trim().toLowerCase();
-    var password = document.getElementById("login-password").value.trim();
-    loginError.textContent = "";
-    loginSubmit.disabled = true;
-    loginSubmit.textContent = "Accesso in corso…";
-    signInWithEmailAndPassword(auth, email, password).catch(function (err) {
-      var code = err && err.code ? err.code : "";
-      var msg;
-      if (code === "auth/wrong-password" || code === "auth/user-not-found" || code === "auth/invalid-credential") {
-        msg = "Email o password non corretti.";
-      } else if (code === "auth/invalid-api-key" || code === "auth/api-key-not-valid" || code === "auth/invalid-api-key.-please-provide-a-valid-api-key") {
-        msg = "Configurazione Firebase non valida: js/firebase-config.js ha ancora i valori segnaposto (o sbagliati). Non è un problema di password: ricontrollate i valori copiati da Firebase Console.";
-      } else if (code === "auth/network-request-failed") {
-        msg = "Impossibile contattare Firebase: controllate la connessione a internet.";
-      } else if (code === "auth/too-many-requests") {
-        msg = "Troppi tentativi ravvicinati: aspettate qualche minuto e riprovate.";
-      } else {
-        msg = "Errore di accesso (" + (code || "sconosciuto") + "): " + err.message;
-      }
-      loginError.textContent = msg;
-      loginSubmit.disabled = false;
-      loginSubmit.textContent = "Accedi";
-    });
-  });
 
   onAuthStateChanged(auth, function (user) {
     if (user) {
@@ -278,6 +234,7 @@ import {
           state.removed = data.removed || [];
           state.budget = data.budget || [];
           state.favorites = data.favorites || [];
+          state.bookings = data.bookings || [];
           renderAll();
         }
       },
@@ -295,13 +252,14 @@ import {
         state.removed = parsed.removed || [];
         state.budget = parsed.budget || [];
         state.favorites = parsed.favorites || [];
+        state.bookings = parsed.bookings || [];
       }
     } catch (e) {}
   }
 
   function persist() {
     renderAll();
-    var payload = { overrides: state.overrides, custom: state.custom, removed: state.removed, budget: state.budget, favorites: state.favorites, savedAt: Date.now() };
+    var payload = { overrides: state.overrides, custom: state.custom, removed: state.removed, budget: state.budget, favorites: state.favorites, bookings: state.bookings, savedAt: Date.now() };
     try { localStorage.setItem("travi-state", JSON.stringify(payload)); } catch (e) {}
     setDoc(doc(db, "travi", "state"), payload).catch(function () {});
   }
@@ -423,6 +381,50 @@ import {
     return o.getHours() * 60 + o.getMinutes();
   }
 
+  /* ---------- dove siete adesso ----------
+     È il pezzo per cui l'app è nata: sapere, mentre si cammina, se le cose
+     che restano ci stanno ancora — partendo da dove si è davvero e non da
+     dove dice il piano. Il telefono dà la posizione solo dietro richiesta
+     esplicita (e su iOS solo da un tocco vero e via HTTPS), quindi è un
+     interruttore che accendete voi: acceso consuma batteria, e ha senso solo
+     nel giorno che state vivendo.
+     La posizione non lascia il telefono: serve solo a calcolare la distanza
+     dalla prossima tappa, con le coordinate che sono già dentro l'app. */
+  var posizione = null, gpsWatch = null;
+
+  function gpsAcceso() { return gpsWatch !== null; }
+
+  function accendiGPS() {
+    if (!navigator.geolocation) { toast("Questo telefono non dà la posizione"); return; }
+    toast("Cerco la posizione…");
+    gpsWatch = navigator.geolocation.watchPosition(
+      function (p) {
+        posizione = { lat: p.coords.latitude, lon: p.coords.longitude, quando: Date.now() };
+        renderAll();
+      },
+      function (err) {
+        spegniGPS();
+        toast(err && err.code === 1
+          ? "Posizione negata: si riattiva da Impostazioni → Safari"
+          : "Non riesco a leggere la posizione");
+      },
+      { enableHighAccuracy: true, maximumAge: 30000, timeout: 20000 }
+    );
+  }
+
+  function spegniGPS() {
+    if (gpsWatch !== null) navigator.geolocation.clearWatch(gpsWatch);
+    gpsWatch = null;
+    posizione = null;
+    renderAll();
+  }
+
+  // Un metro in più o in meno non serve a nessuno: sotto il chilometro si
+  // parla in metri arrotondati, sopra in chilometri con un decimale.
+  function distanzaLeggibile(km) {
+    return km < 1 ? Math.round(km * 1000 / 10) * 10 + " m" : km.toFixed(1) + " km";
+  }
+
   function renderStatoGiornata(dayId, list) {
     var box = document.getElementById("stato-giornata");
     if (!box || !window.Giornata) return;
@@ -442,7 +444,12 @@ import {
     }
 
     var minuti = simula.attiva ? simula.minuti : oraDiAdesso();
-    var e = window.Giornata.calcola(list, minuti, window.TRAVI_ORARI);
+    // La posizione entra nel conto anche mentre si sta simulando un altro
+    // orario: la distanza da dove siete è un fatto vero comunque, e soprattutto
+    // è l'unico modo di PROVARE questa funzione prima di partire — il viaggio è
+    // fra mesi, e una funzione che non si può provare arriva rotta in Giappone.
+    var dove = posizione || null;
+    var e = window.Giornata.calcola(list, minuti, window.TRAVI_ORARI, true, dove);
 
     var html = "";
     if (simula.attiva) {
@@ -469,6 +476,15 @@ import {
     html += '<div class="stato-g ' + (e.problemi.length ? "tardi" : (inRitardo ? "" : "bene")) + '">' +
       '<div class="cap"><div class="titolo">' + titolo + "</div>" +
       '<div class="fine">fine prevista ' + e.finePrevista + "</div></div>";
+
+    // Dove siete rispetto alla prossima tappa: la riga che risponde alla
+    // domanda vera, "da qui quanto ci metto?".
+    if (e.daQui) {
+      html += '<div class="qui-riga"><svg><use href="#ic-gps"/></svg>' +
+        "<div>Siete a <b>" + distanzaLeggibile(e.daQui.km) + "</b> da " + escapeHtml(e.daQui.titolo) +
+        (e.daQui.aPiedi ? " · " + e.daQui.minuti + " min a piedi" : " — troppo per andarci a piedi") +
+        '</div><button class="qui-off" id="gps-off">spegni</button></div>';
+    }
 
     // Solo le tappe che restano, e solo quelle che meritano una riga: le prime
     // due comunque, più tutte quelle con un problema. Un elenco lungo qui
@@ -517,6 +533,9 @@ import {
       }
     }
 
+    if (!gpsAcceso()) {
+      html += '<button class="prova-apri dentro gps" id="gps-on"><svg><use href="#ic-gps"/></svg>Dove sono adesso</button>';
+    }
     if (!simula.attiva) {
       html += '<button class="prova-apri dentro" id="prova-apri">Prova a un altro orario</button>';
     }
@@ -567,6 +586,10 @@ import {
   }
 
   function agganciaProva(dayId, list) {
+    var on = document.getElementById("gps-on");
+    if (on) on.onclick = accendiGPS;
+    var off = document.getElementById("gps-off");
+    if (off) off.onclick = spegniGPS;
     var sp = document.querySelector(".consiglio .sposta");
     if (sp) sp.onclick = function () {
       spostaTappa(this.dataset.tappa, this.dataset.giorno, this.dataset.dopo || null);
@@ -711,6 +734,15 @@ import {
         L.polyline(punti, { color: "#F5503C", weight: 3, opacity: .6, dashArray: "6 7" })
           .addTo(stratoTappe);
       }
+      // Dove siete adesso, se il telefono lo sta dicendo. Volutamente FUORI
+      // dai punti usati per l'inquadratura: se foste a 40 km dalla giornata,
+      // includervi vorrebbe dire non vedere più le tappe.
+      if (posizione) {
+        L.marker([posizione.lat, posizione.lon], {
+          icon: L.divIcon({ className: "", html: '<div class="gps-dot"></div>', iconSize: [18, 18], iconAnchor: [9, 9] }),
+          interactive: false
+        }).addTo(stratoTappe);
+      }
       inquadraGiornata();
     }
 
@@ -762,7 +794,13 @@ import {
     // nei dati se c'è, altrimenti la stima a piedi dalle coordinate — lo
     // stesso numero che usa il motore della giornata (js/giornata.js).
     var tempo = "", prec = mapSelIdx > 0 ? list[mapSelIdx - 1] : null;
-    if (s.tmin) {
+    var primaDaFare = list.findIndex(function (x) { return !x.done; });
+    if (posizione && mapSelIdx === primaDaFare && window.Giornata) {
+      var kmQui = window.Giornata.kmTra(posizione, s);
+      var minQui = window.Giornata.minutiAPiedi(posizione, s);
+      if (kmQui != null && kmQui <= 5) tempo = minQui + " min a piedi da qui";
+      else if (kmQui != null) tempo = distanzaLeggibile(kmQui) + " da qui";
+    } else if (s.tmin) {
       tempo = s.tmin + " min " + (s.tmode === "walk" ? "a piedi" : "di spostamento");
     } else if (prec && window.Giornata) {
       var km = window.Giornata.kmTra(prec, s);
@@ -915,6 +953,7 @@ import {
     renderHome();
     renderBudget();
     renderPreferiti();
+    renderPrenotazioni();
   }
 
   // Frecce della card della Mappa: cambiano solo la tappa a fuoco, come
@@ -946,6 +985,8 @@ import {
     var total = state.budget.reduce(function (sum, it) { return sum + (Number(it.amount) || 0); }, 0);
     document.getElementById("budget-total-home").textContent = fmtEuro(total);
     document.getElementById("budget-count-home").textContent = state.budget.length + (state.budget.length === 1 ? " spesa" : " spese");
+    var sub = document.getElementById("rm-budget-sub");
+    if (sub) sub.textContent = state.budget.length + (state.budget.length === 1 ? " spesa · " : " spese · ") + fmtEuro(total);
     var totalEl = document.getElementById("budget-total");
     if (totalEl) totalEl.textContent = fmtEuro(total);
     var list = document.getElementById("budget-list");
@@ -1200,7 +1241,14 @@ import {
     if (s) {
       gmaps.hidden = false;
       var gq = encodeURIComponent(s.q || (s.title + " " + (s.sub || "")));
-      gmaps.href = "https://www.google.com/maps/search/?api=1&query=" + gq;
+      // Con la posizione accesa il tasto non cerca il posto: ci porta. Il
+      // percorso vero lo fa Google Maps — Travi resta il cervello, le gambe
+      // sono le loro (vedi DESIGN-DECISIONI.md).
+      var dest = (s.lat != null) ? (s.lat + "," + s.lon) : gq;
+      gmaps.href = posizione
+        ? "https://www.google.com/maps/dir/?api=1&origin=" + posizione.lat + "," + posizione.lon +
+          "&destination=" + dest + "&travelmode=walking"
+        : "https://www.google.com/maps/search/?api=1&query=" + gq;
       document.getElementById("link-amaps").href = "https://maps.apple.com/?q=" + gq;
     } else {
       gmaps.hidden = true;
@@ -1553,6 +1601,132 @@ import {
     }
   }
 
+  /* ---------- Prenotazioni (tab Altro) ----------
+     Codici, orari e indirizzi che servono al banco del check-in o davanti a un
+     tassista: spesso senza rete e sempre di fretta. Per questo il codice è
+     grande, in carattere a larghezza fissa (si legge a voce senza sbagliare
+     una O per uno 0) e si copia con un tocco. */
+  function prenTipo(id) {
+    return PREN_TIPI.find(function (t) { return t.id === id; }) || PREN_TIPI[4];
+  }
+
+  function quandoLeggibile(p) {
+    if (!p.data) return p.ora || "";
+    var d = new Date(p.data + "T00:00:00");
+    var mesi = ["gen", "feb", "mar", "apr", "mag", "giu", "lug", "ago", "set", "ott", "nov", "dic"];
+    return weekdayShort(p.data) + " " + d.getDate() + " " + mesi[d.getMonth()] + (p.ora ? " · " + p.ora : "");
+  }
+
+  function renderPrenotazioni() {
+    var el = document.getElementById("pren-lista");
+    if (!el) return;
+    el.innerHTML = "";
+    if (!state.bookings.length) {
+      el.innerHTML = '<div class="pren-vuoto">Nessuna prenotazione salvata.<br>Voli, hotel, treni: quello che serve avere sottomano anche senza rete.</div>';
+      return;
+    }
+    // in ordine di quando servono, non di quando sono state inserite
+    var ordinate = state.bookings.slice().sort(function (a, b) {
+      return ((a.data || "9999") + (a.ora || "")).localeCompare((b.data || "9999") + (b.ora || ""));
+    });
+    ordinate.forEach(function (p) {
+      var t = prenTipo(p.tipo);
+      var card = document.createElement("div");
+      card.className = "pren-card";
+      card.innerHTML =
+        '<div class="pren-ico ' + t.id + '"><svg><use href="#' + t.icon + '"/></svg></div>' +
+        '<div class="pren-corpo">' +
+        '<div class="pren-nome">' + escapeHtml(p.nome || t.label) + "</div>" +
+        (quandoLeggibile(p) ? '<div class="pren-quando">' + quandoLeggibile(p) + "</div>" : "") +
+        (p.codice ? '<div class="pren-codice"><svg><use href="#ic-copy"/></svg>' + escapeHtml(p.codice) + "</div>" : "") +
+        (p.dove ? '<div class="pren-dove">' + escapeHtml(p.dove) + "</div>" : "") +
+        (p.indirizzo ? '<div class="pren-dove">' + escapeHtml(p.indirizzo) + "</div>" : "") +
+        "</div>";
+      card.addEventListener("click", function () { openPrenSheet(p.id); });
+      var cod = card.querySelector(".pren-codice");
+      if (cod) cod.addEventListener("click", function (e) {
+        e.stopPropagation();
+        try {
+          navigator.clipboard.writeText(p.codice);
+          toast("Codice copiato");
+        } catch (err) { toast("Copia non riuscita"); }
+      });
+      el.appendChild(card);
+    });
+  }
+
+  /* ---------- foglio prenotazione ---------- */
+  var prenSheet = document.getElementById("pren-sheet");
+  var prenInModifica = null;
+  buildPickrow("pren-tipo", PREN_TIPI);
+
+  function openPrenSheet(id) {
+    prenInModifica = id || null;
+    var p = id ? state.bookings.find(function (x) { return x.id === id; }) : null;
+    document.getElementById("pren-titolo").textContent = p ? "Modifica prenotazione" : "Nuova prenotazione";
+    selectPick("pren-tipo", p ? p.tipo : "volo");
+    document.getElementById("pren-nome").value = p ? p.nome || "" : "";
+    document.getElementById("pren-codice").value = p ? p.codice || "" : "";
+    document.getElementById("pren-data").value = p ? p.data || "" : "";
+    document.getElementById("pren-ora").value = p ? p.ora || "" : "";
+    document.getElementById("pren-dove").value = p ? p.dove || "" : "";
+    document.getElementById("pren-indirizzo").value = p ? p.indirizzo || "" : "";
+    document.getElementById("pren-note").value = p ? p.note || "" : "";
+    document.getElementById("pren-elimina").style.display = p ? "block" : "none";
+    prenSheet.style.transform = "";
+    backdrop.classList.add("show");
+    prenSheet.classList.add("show");
+    bloccaSfondo(true);
+  }
+  function closePrenSheet() {
+    backdrop.classList.remove("show");
+    prenSheet.classList.remove("show");
+    bloccaSfondo(false);
+    prenInModifica = null;
+  }
+  document.getElementById("pren-close").addEventListener("click", closePrenSheet);
+  backdrop.addEventListener("click", closePrenSheet);
+  document.getElementById("btn-add-pren").addEventListener("click", function () { openPrenSheet(null); });
+
+  document.getElementById("pren-salva").addEventListener("click", function () {
+    var nome = document.getElementById("pren-nome").value.trim();
+    if (!nome) { toast("Serve almeno di cosa si tratta"); return; }
+    // ogni campo ha sempre un valore: Firestore rifiuta undefined
+    var dati = {
+      tipo: getPick("pren-tipo") || "altro",
+      nome: nome,
+      codice: document.getElementById("pren-codice").value.trim(),
+      data: document.getElementById("pren-data").value || "",
+      ora: document.getElementById("pren-ora").value || "",
+      dove: document.getElementById("pren-dove").value.trim(),
+      indirizzo: document.getElementById("pren-indirizzo").value.trim(),
+      note: document.getElementById("pren-note").value.trim(),
+    };
+    if (prenInModifica) {
+      state.bookings = state.bookings.map(function (x) {
+        return x.id === prenInModifica ? Object.assign({}, x, dati) : x;
+      });
+      toast("Prenotazione aggiornata");
+    } else {
+      dati.id = "pren-" + Date.now();
+      dati.createdAt = Date.now();
+      state.bookings.push(dati);
+      toast("Prenotazione salvata");
+    }
+    closePrenSheet();
+    persist();
+  });
+
+  document.getElementById("pren-elimina").addEventListener("click", function () {
+    if (!prenInModifica) return;
+    state.bookings = state.bookings.filter(function (x) { return x.id !== prenInModifica; });
+    toast("Prenotazione eliminata");
+    closePrenSheet();
+    persist();
+  });
+
+  document.getElementById("riga-esci").addEventListener("click", esciDavvero);
+
   /* ---------- foglio budget extra ---------- */
   var budgetSheet = document.getElementById("budget-sheet");
   var bgWhoEl = document.getElementById("bg-who");
@@ -1579,6 +1753,7 @@ import {
     bloccaSfondo(false);
   }
   document.getElementById("budget-summary-card").addEventListener("click", openBudgetSheet);
+  document.getElementById("riga-budget").addEventListener("click", openBudgetSheet);
   document.getElementById("budget-close").addEventListener("click", closeBudgetSheet);
   backdrop.addEventListener("click", closeBudgetSheet);
   document.getElementById("btn-budget-add").addEventListener("click", function () {
@@ -1703,6 +1878,7 @@ import {
   rendiTrascinabile(favSheet, closeFavSheet);
   rendiTrascinabile(assignSheet, closeAssignSheet);
   rendiTrascinabile(budgetSheet, closeBudgetSheet);
+  rendiTrascinabile(prenSheet, closePrenSheet);
 
   /* ---------- toast ---------- */
   var toastTimer = null;

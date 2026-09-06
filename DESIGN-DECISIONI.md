@@ -93,9 +93,39 @@ Tre cambi grossi in un colpo solo, tutti richiesti insieme il 4/09:
   risultato scelto, per non dover più scrivere a mano dati che non si
   conoscono in anticipo.
 
-Restano da costruire, invariato dal 3/09: Esplora, Prenotazioni, Budget come
-sezione propria, Diario, e il tab "Altro" che li raccoglierebbe — il
-documento di architettura originale resta valido come piano per quelli.
+## ADOTTATO — quinto tab, posizione reale, funzionamento senza rete (4 settembre 2026, sera)
+
+- **Altro** è il quinto tab: dentro ci sono le **Prenotazioni** (codici, orari,
+  indirizzi anche in giapponese da mostrare a un tassista), il Budget extra e
+  l'uscita dall'account. Il codice di prenotazione è in carattere a larghezza
+  fissa e si copia con un tocco: serve al banco del check-in, di fretta e
+  spesso senza rete.
+- **"Dove sono adesso"**: la posizione del telefono entra nel motore
+  (`js/giornata.js`, parametro `daDove`). Il ritardo si calcola da dove siete
+  davvero e non da dove dice il piano, e per la prossima tappa la stima a piedi
+  dalla posizione reale ha la precedenza sul tempo previsto nei dati. È un
+  interruttore, non automatico: consuma batteria e ha senso solo mentre si
+  cammina. La posizione non lascia il telefono.
+- **Senza rete**: vedi la nota lunga in `sw.js` e `js/firebase-init.js`. Erano
+  tre buchi insieme — librerie esterne non messe in cache, Firestore senza
+  copia locale, e il service worker registrato da un modulo che dipendeva
+  dalla rete. Ora l'app si riapre e funziona in metropolitana.
+
+Restano da costruire: Esplora, Diario, e il Budget come sezione a sé (oggi è
+un foglio richiamato da Home e da Altro) — il documento di architettura
+originale resta valido come piano per quelli.
+
+## Lo strumento di prova
+
+`_tools/prova.js` apre l'app vera in un browser e ci si comporta come un dito:
+cambia le cinque pagine, apre e trascina i fogli, salva un preferito e una
+prenotazione, accende la posizione, spegne la rete. Trenta verifiche, si lancia
+con `node _tools/prova.js`.
+
+Non è cerimonia: ha già trovato due cose che a leggere il codice non si vedevano
+— il service worker che non si registrava senza rete, e il tasto della posizione
+irraggiungibile finché il viaggio è lontano (cioè impossibile da provare prima
+di partire). Prima di pubblicare qualcosa di grosso, si lancia.
 
 ---
 

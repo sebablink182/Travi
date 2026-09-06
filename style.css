@@ -639,10 +639,10 @@
   .tab{
     border:none; background:transparent; color: var(--vetro-testo);
     display:flex; flex-direction:column; align-items:center;
-    gap:3px; padding:9px 14px; border-radius: var(--r-pill); cursor:pointer; font-size:.6rem; font-weight:600;
+    gap:3px; padding:9px 10px; border-radius: var(--r-pill); cursor:pointer; font-size:.58rem; font-weight:600;
     /* Le icone seguono da sole: sono disegnate con stroke="currentColor".
-       Padding ridotto il 4/09 (era 20px) per fare posto al quarto tab
-       (Preferiti) nella stessa pillola. */
+       Padding ridotto due volte (era 20px) per far stare cinque voci nella
+       stessa pillola: Preferiti prima, Altro poi. */
   }
   .tab .ico{ display:flex; }
   .tab svg{ width:19px; height:19px; }
@@ -912,6 +912,27 @@
   }
   .prova-barra + .stato-g{ margin-top:8px; }
 
+  /* la riga "siete a X dalla prossima tappa" dentro il pannello della giornata */
+  .qui-riga{
+    display:flex; align-items:center; gap:8px; margin-top:11px; padding:9px 11px;
+    background: rgba(70,82,103,.08); border-radius: var(--r-md);
+    font-size:13px; line-height:1.35;
+  }
+  .qui-riga svg{ width:15px; height:15px; flex:none; color: var(--indigo); }
+  .qui-riga > div{ flex:1; }
+  .qui-off{
+    flex:none; border:none; background:transparent; color:var(--text-muted);
+    font-size:11px; text-decoration:underline; padding:2px;
+  }
+  .prova-apri.gps{ display:flex; align-items:center; justify-content:center; gap:7px; color: var(--indigo); border-color: rgba(70,82,103,.3); }
+  .prova-apri.gps svg{ width:14px; height:14px; }
+
+  /* il pallino "sono qui" sulla mappa */
+  .gps-dot{
+    width:18px; height:18px; border-radius:50%; background: #2C7BE5;
+    border:3px solid #fff; box-shadow: 0 0 0 6px rgba(44,123,229,.18), 0 2px 6px rgba(20,14,10,.35);
+  }
+
   .field .aiuto{ font: var(--t-caption); color: var(--text-muted); margin-top:5px; line-height:1.4; }
   /* pallino di priorità accanto al titolo nella lista delle tappe */
   .prio-mark{ display:inline-flex; vertical-align:-2px; margin-right:5px; }
@@ -984,3 +1005,53 @@
     opacity:0; cursor:pointer;
     clip-path: inset(0 round 999px);
   }
+
+  /* ---------- Altro: prenotazioni e impostazioni ---------- */
+  .sez-titolo{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-faint);
+    font-weight:600; margin: 20px 18px 8px;
+  }
+  .pren-lista{ padding: 0 16px; }
+  .pren-card{
+    display:flex; gap:12px; align-items:flex-start; background:var(--surface);
+    border:1px solid var(--border); border-radius: var(--r-lg); padding:13px;
+    box-shadow: var(--shadow-1); margin-bottom:10px; cursor:pointer;
+  }
+  .pren-ico{
+    flex:none; width:40px; height:40px; border-radius:13px; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(155deg, var(--fogblue), var(--indigo));
+  }
+  .pren-ico.volo{ background: linear-gradient(155deg, var(--fogblue), var(--indigo)); }
+  .pren-ico.hotel{ background: linear-gradient(155deg, var(--sakura), var(--accent)); }
+  .pren-ico.treno{ background: linear-gradient(155deg, var(--amber), var(--accent-2)); }
+  .pren-ico svg{ width:18px; height:18px; }
+  .pren-corpo{ flex:1; min-width:0; }
+  .pren-nome{ font-family:var(--font-display); font-size:.98rem; font-weight:600; }
+  .pren-quando{ font-size:.76rem; color:var(--text-muted); margin-top:1px; }
+  .pren-codice{
+    display:inline-flex; align-items:center; gap:6px; margin-top:7px;
+    background:var(--surface-2); border:1px solid var(--border); border-radius: var(--r-sm);
+    padding:5px 9px; font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size:.82rem; font-weight:600; letter-spacing:.06em;
+  }
+  .pren-codice svg{ width:12px; height:12px; color:var(--text-muted); }
+  .pren-dove{ font-size:.76rem; color:var(--text-muted); margin-top:6px; white-space:pre-line; }
+  .pren-vuoto{ text-align:center; color:var(--text-muted); padding:24px 16px; font-size:.85rem; line-height:1.5; }
+
+  .riga-menu{
+    display:flex; align-items:center; gap:12px; margin: 0 16px 10px; padding:13px;
+    background:var(--surface); border:1px solid var(--border); border-radius: var(--r-lg);
+    box-shadow: var(--shadow-1); cursor:pointer;
+  }
+  .rm-ico{
+    flex:none; width:38px; height:38px; border-radius:12px; color:#fff;
+    display:flex; align-items:center; justify-content:center;
+    background: linear-gradient(155deg, var(--good), #2E8B57);
+  }
+  .rm-ico.esci{ background: linear-gradient(155deg, #C98A8A, #B4503C); }
+  .rm-ico svg{ width:17px; height:17px; }
+  .rm-testo{ flex:1; min-width:0; }
+  .rm-t{ font-weight:600; font-size:.92rem; }
+  .rm-s{ font-size:.76rem; color:var(--text-muted); margin-top:1px; }
+  .riga-menu .chev{ color:var(--text-faint); flex:none; }

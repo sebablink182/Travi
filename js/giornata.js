@@ -69,18 +69,24 @@
   }
 
   /* -------------------------------------------------------------------------
-     calcola(tappe, adesso, orari)
+     calcola(tappe, adesso, orari, conSuggerimento, daDove)
 
        tappe  = le tappe del giorno, IN ORDINE, come le usa l'app
                 (id, time, dur, tmin, lat, lon, done, locked, title)
        adesso = minuti dalla mezzanotte (es. 16*60+20 per le 16:20)
        orari  = window.TRAVI_ORARI
+       daDove = {lat, lon} — DOVE SIETE ADESSO, se il telefono lo sa.
+                Cambia tutto: senza, il conto parte dall'ultima tappa fatta e
+                dà per scontato che siate ancora lì; con, parte da dove siete
+                davvero. È la differenza fra "secondo il piano dovresti
+                metterci 20 minuti" e "da qui dove sei sono 800 metri, 12
+                minuti". Era il motivo per cui quest'app è nata.
 
      Restituisce lo stato della giornata. Vedi in fondo il formato.
      ------------------------------------------------------------------------- */
   // conSuggerimento=false nelle chiamate interne: senza questo, calcola()
   // chiama cercaSuggerimento() che richiama calcola()... all'infinito.
-  function calcola(tappe, adesso, orari, conSuggerimento) {
+  function calcola(tappe, adesso, orari, conSuggerimento, daDove) {
     if (conSuggerimento === undefined) conSuggerimento = true;
     orari = orari || {};
     var fatte = tappe.filter(function (t) { return t.done; });
@@ -111,9 +117,12 @@
     }
 
     var precedente = fatte.length ? fatte[fatte.length - 1] : null;
+    // Se sappiamo dove siete, il punto di partenza per la prossima tappa siete
+    // voi, non l'ultima tappa fatta (da cui magari vi siete già allontanati).
+    var qui = (daDove && daDove.lat != null) ? { lat: daDove.lat, lon: daDove.lon } : null;
 
     restanti.forEach(function (t, i) {
-      var rif = i === 0 ? precedente : restanti[i - 1];
+      var rif = i === 0 ? (qui || precedente) : restanti[i - 1];
       var km = rif ? kmTra(rif, t) : null;
       // La stima a piedi vale solo per distanze davvero percorribili a piedi.
       // Senza questo controllo, una tappa di trasferimento senza tempo
@@ -128,7 +137,12 @@
       //      di questa tappa e la fine di quella prima. È il caso dei treni
       //      fra città, dove il piano sa qualcosa che le coordinate non sanno.
       var viaggio, stimaDa;
-      if (t.tmin != null && t.tmin > 0) { viaggio = t.tmin; stimaDa = "dati"; }
+      // Eccezione voluta all'ordine qui sotto: per la PROSSIMA tappa, se
+      // sappiamo dove siete e ci si arriva a piedi, quel numero vince sul
+      // tempo previsto nei dati — quello era calcolato dalla tappa precedente,
+      // questo da dove siete adesso.
+      if (i === 0 && qui && piedi != null) { viaggio = piedi; stimaDa = "qui"; }
+      else if (t.tmin != null && t.tmin > 0) { viaggio = t.tmin; stimaDa = "dati"; }
       else if (piedi != null) { viaggio = piedi; stimaDa = "piedi"; }
       else {
         var oraQui = min(t.time), oraPrima = rif ? min(rif.time) : null;
@@ -186,13 +200,25 @@
     });
 
     esito.finePrevista = hhmm(cursore);
+    // Comodo per l'interfaccia: quanto siete lontani dalla prossima tappa.
+    if (qui && restanti.length) {
+      var kmQui = kmTra(qui, restanti[0]);
+      if (kmQui != null) {
+        esito.daQui = {
+          km: kmQui,
+          minuti: minutiAPiedi(qui, restanti[0]),
+          aPiedi: kmQui <= MAX_A_PIEDI_KM,
+          titolo: restanti[0].title
+        };
+      }
+    }
     // Il ritardo è quello sulla prossima tappa: è il numero che conta davvero
     // mentre si cammina, non la media della giornata.
     if (esito.previsioni.length && esito.previsioni[0].scarto != null) {
       esito.ritardo = esito.previsioni[0].scarto;
     }
     if (conSuggerimento && esito.problemi.length) {
-      esito.suggerimento = cercaSuggerimento(tappe, adesso, orari);
+      esito.suggerimento = cercaSuggerimento(tappe, adesso, orari, daDove);
     }
     return esito;
   }
@@ -203,8 +229,8 @@
      bloccate, mai l'ultima rimasta) e tiene la rinuncia che risolve più
      problemi. Se nessuna basta, lo dice invece di inventarsi una soluzione.
      ------------------------------------------------------------------------- */
-  function cercaSuggerimento(tappe, adesso, orari) {
-    var base = calcola(tappe, adesso, orari, false);
+  function cercaSuggerimento(tappe, adesso, orari, daDove) {
+    var base = calcola(tappe, adesso, orari, false, daDove);
     var inGuaio = base.problemi.map(function (p) { return p.id; });
 
     // Rinunciare alla tappa che NON si fa in tempo non è un consiglio: è la
@@ -220,7 +246,7 @@
     candidate.forEach(function (c) {
       var senza = tappe.filter(function (t) { return t.id !== c.id; });
       if (!senza.filter(function (t) { return !t.done; }).length) return;
-      var prova = calcola(senza, adesso, orari, false);
+      var prova = calcola(senza, adesso, orari, false, daDove);
       var risolti = base.problemi.length - prova.problemi.length;
       if (risolti <= 0) return;
 
