@@ -179,6 +179,16 @@ import {
     if (appBooted) return; // evita doppie sottoscrizioni se onAuthStateChanged rifira
     appBooted = true;
 
+    function avvia() {
+      dataLoaded = true;
+      selectedDay.itinerario = defaultDay();
+      loadLocalFallback();
+      subscribeState();
+      renderAll();
+      mostraStatoRete();
+      setInterval(renderHome, 60000);
+    }
+
     getDoc(doc(db, "travi", "itinerary")).then(function (snap) {
       if (snap.exists()) {
         var data = snap.data();
@@ -186,23 +196,65 @@ import {
         DAYS = data.days || [];
         SEED_STOPS = data.stops || [];
         innestaCoordinate();
+        salvaItinerarioLocale();
       } else {
         DAYS = [];
         SEED_STOPS = [];
       }
-      dataLoaded = true;
-      selectedDay.itinerario = defaultDay();
-      loadLocalFallback();
-      subscribeState();
-      renderAll();
-      setInterval(renderHome, 60000);
+      avvia();
     }).catch(function (err) {
+      // Ultima rete di sicurezza: né rete né copia di Firestore, ma la nostra
+      // copia dell'itinerario è lì. Meglio partire con dati di ieri che con
+      // una schermata d'errore in mezzo a Kyoto.
+      if (leggiItinerarioLocale()) { avvia(); return; }
       document.getElementById("view-home").innerHTML =
-        '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);">' +
-        "Non riesco a leggere i dati del viaggio da Firestore.<br>Controllate le Firestore Rules e che l'itinerario sia stato caricato con admin-seed.html.</div>";
+        '<div style="padding:40px 20px;text-align:center;color:var(--text-muted);line-height:1.5;">' +
+        (navigator.onLine
+          ? "Non riesco a leggere i dati del viaggio da Firestore.<br>Controllate le Firestore Rules e che l'itinerario sia stato caricato con admin-seed.html."
+          : "Siete senza rete e su questo telefono non c'è ancora una copia del viaggio.<br><br>Apritela una volta con la connessione: da lì in poi funzionerà anche senza.") +
+        "</div>";
       console.error(err);
     });
   }
+
+  /* ---------- copia locale dell'itinerario ----------
+     Firestore ha già una sua copia locale (vedi js/firebase-init.js): questa è
+     una seconda rete di sicurezza, indipendente dalla prima. Se IndexedDB non
+     fosse disponibile o la copia di Firestore si perdesse, il viaggio resta
+     comunque leggibile. Sono pochi kilobyte, e il giorno che serve serve. */
+  function salvaItinerarioLocale() {
+    try {
+      localStorage.setItem("travi-itinerario",
+        JSON.stringify({ trip: TRIP, days: DAYS, stops: SEED_STOPS, salvatoIl: Date.now() }));
+    } catch (e) {}
+  }
+  function leggiItinerarioLocale() {
+    try {
+      var raw = localStorage.getItem("travi-itinerario");
+      if (!raw) return false;
+      var d = JSON.parse(raw);
+      if (!d || !d.days || !d.days.length) return false;
+      TRIP = d.trip || TRIP;
+      DAYS = d.days;
+      SEED_STOPS = d.stops || [];
+      innestaCoordinate();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  /* ---------- stato della rete ----------
+     Senza rete l'app continua a funzionare sulla copia locale, ma è giusto
+     saperlo: quello che si vede potrebbe non essere aggiornatissimo, e le
+     modifiche fatte adesso partiranno più tardi. */
+  function mostraStatoRete() {
+    var pill = document.getElementById("offline-pill");
+    if (pill) pill.hidden = navigator.onLine !== false;
+  }
+  window.addEventListener("offline", mostraStatoRete);
+  window.addEventListener("online", function () {
+    mostraStatoRete();
+    if (dataLoaded) toast("Rete tornata: sincronizzo");
+  });
 
   // L'itinerario su Firestore è stato caricato prima che le coordinate
   // esistessero. Invece di riscriverlo (cancellando le vostre modifiche) le
@@ -1662,10 +1714,8 @@ import {
     toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2200);
   }
 
-  /* ---------- registrazione service worker (PWA installabile) ---------- */
-  if ("serviceWorker" in navigator) {
-    window.addEventListener("load", function () {
-      navigator.serviceWorker.register("sw.js").catch(function () {});
-    });
-  }
+  /* La registrazione del service worker NON sta più qui: è passata in
+     index.html, in uno script normale. Da qui dipendeva dal caricamento
+     dell'SDK Firebase via rete — e senza rete non si registrava proprio
+     quando serviva. Vedi la nota in index.html. */
 })();
