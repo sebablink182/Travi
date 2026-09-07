@@ -10,3 +10,17 @@ node_modules/
 # Script locali che pubblicano da soli su GitHub + il loro log — servono solo
 # sul PC, non fanno parte dell'app e non vanno pubblicati nel repository
 _tools/
+
+# anteprime usa e getta generate da _tools/anteprima.py
+_prev-*.html
+
+# banchi di prova generati da _tools/prova.js e _tools/scatta-fogli.js
+_test.html
+_test-app.mjs
+_shot.html
+_shot-app.mjs
+
+# i "punti di salvataggio": copie complete del progetto in un dato momento,
+# da tenere sul PC per poterci tornare. Pesano, e non c'entrano niente con
+# l'app pubblicata
+_salvataggi/
