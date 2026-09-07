@@ -93,6 +93,9 @@
   <symbol id="ic-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></symbol>
   <symbol id="ic-ticket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M13 5v2" /><path d="M13 17v2" /><path d="M13 11v2" /></symbol>
   <symbol id="ic-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></symbol>
+  <symbol id="ic-diario" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" /><path d="M2 6h4" /><path d="M2 10h4" /><path d="M2 14h4" /><path d="M2 18h4" /><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" /></symbol>
+  <symbol id="ic-frasi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6" /><path d="m4 14 6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" /><path d="m22 22-5-10-5 10" /><path d="M14 18h6" /></symbol>
+  <symbol id="ic-cambio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4" /><path d="M4 7h16" /><path d="m16 21 4-4-4-4" /><path d="M20 17H4" /></symbol>
 </svg>
 
 <div class="stage">
@@ -106,7 +109,7 @@
           <div class="hero-topfade"></div>
           <div class="hero-topbar">
             <div class="brand"><svg><use href="#ic-torii"/></svg><span>Travi</span></div>
-            <div class="icon-btn glass"><svg><use href="#ic-search"/></svg></div>
+            <div class="icon-btn glass cerca-apri"><svg><use href="#ic-search"/></svg></div>
           </div>
           <div class="weather-card" id="weather-card">
             <svg class="w-icon" id="weather-icon" viewBox="0 0 24 24" fill="none" stroke="#C1652F" stroke-width="1.5"><use href="#ic-sun"/></svg>
@@ -187,7 +190,7 @@
       <div class="scroll">
         <div class="topbar">
           <span class="display" style="font-size:1.25rem;">Itinerario</span>
-          <div class="icon-btn"><svg><use href="#ic-search"/></svg></div>
+          <div class="icon-btn cerca-apri"><svg><use href="#ic-search"/></svg></div>
         </div>
         <div class="dayrow" id="dayrow-itin"></div>
         <div class="city-heading"><h2 id="itin-city">–</h2><span id="itin-theme"></span></div>
@@ -240,6 +243,22 @@
         </div>
         <div class="sez-titolo">Prenotazioni</div>
         <div class="pren-lista" id="pren-lista"></div>
+        <div class="sez-titolo">In viaggio</div>
+        <div class="riga-menu" id="riga-frasi">
+          <div class="rm-ico"><svg><use href="#ic-frasi"/></svg></div>
+          <div class="rm-testo"><div class="rm-t">Frasi in giapponese</div><div class="rm-s">Da dire o da far leggere — funziona senza rete</div></div>
+          <svg class="chev" width="18" height="18"><use href="#ic-chev"/></svg>
+        </div>
+        <div class="riga-menu" id="riga-cambio">
+          <div class="rm-ico"><svg><use href="#ic-cambio"/></svg></div>
+          <div class="rm-testo"><div class="rm-t">Yen ed euro</div><div class="rm-s" id="rm-cambio-sub">—</div></div>
+          <svg class="chev" width="18" height="18"><use href="#ic-chev"/></svg>
+        </div>
+        <div class="riga-menu" id="riga-diario">
+          <div class="rm-ico"><svg><use href="#ic-diario"/></svg></div>
+          <div class="rm-testo"><div class="rm-t">Diario</div><div class="rm-s" id="rm-diario-sub">Ancora niente scritto</div></div>
+          <svg class="chev" width="18" height="18"><use href="#ic-chev"/></svg>
+        </div>
         <div class="sez-titolo">Impostazioni</div>
         <div class="riga-menu" id="riga-budget">
           <div class="rm-ico"><svg><use href="#ic-wallet"/></svg></div>
@@ -376,6 +395,67 @@
   </div>
   <div class="sheet-body" id="assign-body"></div>
 </div>
+<div class="sheet" id="cerca-sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong style="font-family:var(--font-display); font-size:1.05rem;">Cerca</strong>
+    <button class="x" id="cerca-close">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <input type="text" id="cerca-tutto" placeholder="Un posto, un preferito, un codice di prenotazione…" autocomplete="off">
+    </div>
+    <div id="cerca-esiti"></div>
+  </div>
+</div>
+<div class="sheet" id="frasi-sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong style="font-family:var(--font-display); font-size:1.05rem;">Frasi in giapponese</strong>
+    <button class="x" id="frasi-close">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="field">
+      <input type="text" id="frasi-cerca" placeholder="Cerca: conto, bagno, allergia…" autocomplete="off">
+    </div>
+    <div id="frasi-lista"></div>
+  </div>
+</div>
+<div class="sheet" id="cambio-sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong style="font-family:var(--font-display); font-size:1.05rem;">Yen ed euro</strong>
+    <button class="x" id="cambio-close">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="cambio-riga">
+      <div class="cambio-campo">
+        <label>Yen</label>
+        <input type="text" inputmode="numeric" id="cambio-jpy" placeholder="0">
+      </div>
+      <div class="cambio-eq">=</div>
+      <div class="cambio-campo">
+        <label>Euro</label>
+        <input type="text" inputmode="decimal" id="cambio-eur" placeholder="0,00">
+      </div>
+    </div>
+    <div class="cambio-nota" id="cambio-nota">—</div>
+    <div class="sez-titolo" style="margin-top:6px;">Colpo d'occhio</div>
+    <div id="cambio-scala"></div>
+    <div class="cambio-aiuto">
+      Regola veloce a mente: <strong>si tolgono due zeri e si dimezza</strong>.
+      1.000 ¥ ≈ 5,50 € · 3.000 ¥ ≈ 16 € · 10.000 ¥ ≈ 55 €.
+    </div>
+  </div>
+</div>
+<div class="sheet" id="diario-sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong style="font-family:var(--font-display); font-size:1.05rem;">Diario</strong>
+    <button class="x" id="diario-close">✕</button>
+  </div>
+  <div class="sheet-body" id="diario-body"></div>
+</div>
 <div class="sheet" id="pren-sheet">
   <div class="sheet-grip"></div>
   <div class="sheet-head">
@@ -446,6 +526,7 @@
 </script>
 <script src="js/coords.js"></script>
 <script src="js/orari.js"></script>
+<script src="js/frasi.js"></script>
 <script src="js/giornata.js"></script>
 <script src="js/cerca-luogo.js"></script>
 <script src="js/foto.js"></script>

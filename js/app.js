@@ -64,7 +64,7 @@ import {
   var SEED_STOPS = [];
   var dataLoaded = false;
 
-  var state = { overrides: {}, custom: [], removed: [], budget: [], favorites: [], bookings: [] };
+  var state = { overrides: {}, custom: [], removed: [], budget: [], favorites: [], bookings: [], diario: {} };
   var BUDGET_WHO = [
     { id: "sebastian", label: "Sebastian" },
     { id: "alessandra", label: "Alessandra" },
@@ -235,6 +235,7 @@ import {
           state.budget = data.budget || [];
           state.favorites = data.favorites || [];
           state.bookings = data.bookings || [];
+          state.diario = data.diario || {};
           renderAll();
         }
       },
@@ -253,13 +254,14 @@ import {
         state.budget = parsed.budget || [];
         state.favorites = parsed.favorites || [];
         state.bookings = parsed.bookings || [];
+        state.diario = parsed.diario || {};
       }
     } catch (e) {}
   }
 
   function persist() {
     renderAll();
-    var payload = { overrides: state.overrides, custom: state.custom, removed: state.removed, budget: state.budget, favorites: state.favorites, bookings: state.bookings, savedAt: Date.now() };
+    var payload = { overrides: state.overrides, custom: state.custom, removed: state.removed, budget: state.budget, favorites: state.favorites, bookings: state.bookings, diario: state.diario, savedAt: Date.now() };
     try { localStorage.setItem("travi-state", JSON.stringify(payload)); } catch (e) {}
     setDoc(doc(db, "travi", "state"), payload).catch(function () {});
   }
@@ -954,6 +956,8 @@ import {
     renderBudget();
     renderPreferiti();
     renderPrenotazioni();
+    aggiornaRigaCambio();
+    aggiornaRigaDiario();
   }
 
   // Frecce della card della Mappa: cambiano solo la tappa a fuoco, come
@@ -1727,6 +1731,385 @@ import {
 
   document.getElementById("riga-esci").addEventListener("click", esciDavvero);
 
+  /* ---------- ricerca ----------
+     Le lenti d'ingrandimento nelle intestazioni prima erano decorative. Con
+     52 tappe su 14 giorni la domanda vera è "dove l'avevamo messo, Nishiki
+     Market?", e la risposta non deve costare quattordici tocchi sul
+     calendario. Cerca in una volta sola fra tappe, preferiti e prenotazioni,
+     e portarsi dove sta la cosa trovata. */
+  var cercaSheet = document.getElementById("cerca-sheet");
+
+  function normalizza(t) {
+    return String(t || "").toLowerCase();
+  }
+
+  function cercaOvunque(q) {
+    var t = normalizza(q);
+    if (t.length < 2) return null;
+    var dentro = function (s) { return normalizza(s).indexOf(t) !== -1; };
+    return {
+      tappe: allStops().filter(function (s) {
+        return dentro(s.title) || dentro(s.sub) || dentro(s.notes);
+      }).slice(0, 12),
+      preferiti: state.favorites.filter(function (f) {
+        return dentro(f.title) || dentro(f.sub) || dentro(f.notes);
+      }).slice(0, 8),
+      prenotazioni: state.bookings.filter(function (p) {
+        return dentro(p.nome) || dentro(p.codice) || dentro(p.dove) || dentro(p.note);
+      }).slice(0, 8),
+    };
+  }
+
+  function renderRicerca() {
+    var box = document.getElementById("cerca-esiti");
+    var esiti = cercaOvunque(document.getElementById("cerca-tutto").value);
+    box.innerHTML = "";
+    if (!esiti) {
+      box.innerHTML = '<div class="cerca-vuoto">Scrivete almeno due lettere.<br>Cerca fra le tappe di tutti i giorni, i preferiti e le prenotazioni.</div>';
+      return;
+    }
+    var quanti = esiti.tappe.length + esiti.preferiti.length + esiti.prenotazioni.length;
+    if (!quanti) {
+      box.innerHTML = '<div class="cerca-vuoto">Nessun risultato.</div>';
+      return;
+    }
+
+    function riga(icona, titolo, sotto, onTap) {
+      var el = document.createElement("div");
+      el.className = "cerca-esito";
+      el.innerHTML =
+        '<div class="ce-ico"' + (icona.foto ? ' style="background-image:url(\'' + icona.foto + '\')"' : "") + ">" +
+        (icona.foto ? "" : '<svg><use href="#' + icona.svg + '"/></svg>') + "</div>" +
+        '<div class="ce-corpo"><div class="ce-t">' + escapeHtml(titolo) + "</div>" +
+        '<div class="ce-s">' + escapeHtml(sotto) + "</div></div>";
+      el.addEventListener("click", onTap);
+      box.appendChild(el);
+    }
+    function gruppo(nome) {
+      var g = document.createElement("div");
+      g.className = "cerca-gruppo";
+      g.textContent = nome;
+      box.appendChild(g);
+    }
+
+    if (esiti.tappe.length) {
+      gruppo("Tappe");
+      esiti.tappe.forEach(function (s) {
+        var g = dayById(s.day);
+        riga({ foto: imgFor(s) }, s.title,
+          (g ? weekdayShort(g.date) + " " + dayNum(g.date) + " · " + g.city + " · " : "") + s.time,
+          function () {
+            chiudiRicerca();
+            if (s.day) selectedDay.itinerario = s.day;
+            switchView("itinerario");
+            renderAll();
+            setTimeout(function () { openSheet(s.id); }, 220);
+          });
+      });
+    }
+    if (esiti.preferiti.length) {
+      gruppo("Preferiti");
+      esiti.preferiti.forEach(function (f) {
+        riga({ foto: imgFor(f) }, f.title, f.sub || "da programmare", function () {
+          chiudiRicerca();
+          switchView("preferiti");
+        });
+      });
+    }
+    if (esiti.prenotazioni.length) {
+      gruppo("Prenotazioni");
+      esiti.prenotazioni.forEach(function (p) {
+        riga({ svg: prenTipo(p.tipo).icon }, p.nome,
+          [quandoLeggibile(p), p.codice].filter(Boolean).join(" · "),
+          function () {
+            chiudiRicerca();
+            switchView("altro");
+            setTimeout(function () { openPrenSheet(p.id); }, 220);
+          });
+      });
+    }
+  }
+
+  function apriRicerca() {
+    document.getElementById("cerca-tutto").value = "";
+    renderRicerca();
+    cercaSheet.style.transform = "";
+    backdrop.classList.add("show");
+    cercaSheet.classList.add("show");
+    bloccaSfondo(true);
+    // la tastiera si apre da sola: qui si cerca, non si guarda
+    setTimeout(function () { document.getElementById("cerca-tutto").focus(); }, 320);
+  }
+  function chiudiRicerca() {
+    backdrop.classList.remove("show");
+    cercaSheet.classList.remove("show");
+    bloccaSfondo(false);
+  }
+  document.getElementById("cerca-close").addEventListener("click", chiudiRicerca);
+  backdrop.addEventListener("click", chiudiRicerca);
+  document.getElementById("cerca-tutto").addEventListener("input", renderRicerca);
+  document.querySelectorAll(".cerca-apri").forEach(function (b) {
+    b.addEventListener("click", apriRicerca);
+  });
+
+  /* ---------- frasi in giapponese ----------
+     Tutto dentro l'app, niente traduttore: nella metropolitana di Tokyo non
+     c'è campo e al banco di un izakaya non si ha il tempo di aspettare che
+     un'app carichi. La riga in giapponese è grande perché il gesto vero è
+     girare lo schermo verso l'altra persona. */
+  var frasiSheet = document.getElementById("frasi-sheet");
+
+  function renderFrasi() {
+    var box = document.getElementById("frasi-lista");
+    var q = normalizza(document.getElementById("frasi-cerca").value);
+    var gruppi = window.TRAVI_FRASI || [];
+    box.innerHTML = "";
+    var trovate = 0;
+    gruppi.forEach(function (g) {
+      var voci = q.length < 2 ? g.voci : g.voci.filter(function (v) {
+        return normalizza(v.it).indexOf(q) !== -1 || normalizza(v.ro).indexOf(q) !== -1;
+      });
+      if (!voci.length) return;
+      trovate += voci.length;
+      var t = document.createElement("div");
+      t.className = "frase-gruppo";
+      t.textContent = g.gruppo;
+      box.appendChild(t);
+      if (g.nota && q.length < 2) {
+        var n = document.createElement("div");
+        n.className = "frase-nota";
+        n.textContent = g.nota;
+        box.appendChild(n);
+      }
+      voci.forEach(function (v) {
+        var el = document.createElement("div");
+        el.className = "frase";
+        el.innerHTML =
+          '<div class="f-ja">' + escapeHtml(v.ja) + "</div>" +
+          '<div class="f-ro">' + escapeHtml(v.ro) + "</div>" +
+          '<div class="f-it">' + escapeHtml(v.it) + "</div>";
+        box.appendChild(el);
+      });
+    });
+    if (!trovate) box.innerHTML = '<div class="cerca-vuoto">Nessuna frase con questa parola.</div>';
+  }
+
+  function apriFrasi() {
+    document.getElementById("frasi-cerca").value = "";
+    renderFrasi();
+    frasiSheet.style.transform = "";
+    backdrop.classList.add("show");
+    frasiSheet.classList.add("show");
+    bloccaSfondo(true);
+  }
+  function chiudiFrasi() {
+    backdrop.classList.remove("show");
+    frasiSheet.classList.remove("show");
+    bloccaSfondo(false);
+  }
+  document.getElementById("frasi-close").addEventListener("click", chiudiFrasi);
+  backdrop.addEventListener("click", chiudiFrasi);
+  document.getElementById("frasi-cerca").addEventListener("input", renderFrasi);
+  document.getElementById("riga-frasi").addEventListener("click", apriFrasi);
+
+  /* ---------- yen ed euro ----------
+     Il cambio si scarica quando c'è rete e si tiene da parte: in Giappone
+     serve davanti a un menù, cioè quasi sempre senza rete. Il valore di
+     partenza qui sotto è quello del 7 settembre 2026, così anche il primo
+     avvio offline dà un numero sensato invece di un trattino. */
+  var CAMBIO_DI_SCORTA = { eurJpy: 181.5, quando: "2026-09-07" };
+  var cambioSheet = document.getElementById("cambio-sheet");
+
+  function leggiCambio() {
+    try {
+      var c = JSON.parse(localStorage.getItem("travi-cambio") || "null");
+      if (c && c.eurJpy > 0) return c;
+    } catch (e) {}
+    return CAMBIO_DI_SCORTA;
+  }
+  function aggiornaCambio() {
+    if (!navigator.onLine) return Promise.resolve(leggiCambio());
+    return fetch("https://api.frankfurter.dev/v1/latest?base=EUR&symbols=JPY")
+      .then(function (r) { return r.json(); })
+      .then(function (d) {
+        var v = d && d.rates && d.rates.JPY;
+        if (!(v > 0)) throw new Error("niente");
+        var c = { eurJpy: v, quando: d.date || todayISO() };
+        try { localStorage.setItem("travi-cambio", JSON.stringify(c)); } catch (e) {}
+        return c;
+      })
+      .catch(function () { return leggiCambio(); });
+  }
+  function dataLeggibile(iso) {
+    if (!iso) return "";
+    var p = String(iso).split("-");
+    return p.length === 3 ? p[2] + "/" + p[1] + "/" + p[0] : iso;
+  }
+  function euroDaYen(y) { return y / leggiCambio().eurJpy; }
+  function formattaEuro(n) {
+    return n.toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+  }
+  function formattaYen(n) {
+    return Math.round(n).toLocaleString("it-IT");
+  }
+  function soloNumero(t) {
+    var pulito = String(t || "").replace(/[^0-9.,]/g, "").replace(/\./g, "").replace(",", ".");
+    var n = parseFloat(pulito);
+    return isNaN(n) ? null : n;
+  }
+  function renderScalaCambio() {
+    var box = document.getElementById("cambio-scala");
+    if (!box) return;
+    box.innerHTML = "";
+    [100, 500, 1000, 3000, 5000, 10000].forEach(function (y) {
+      var r = document.createElement("div");
+      r.className = "cambio-scala-riga";
+      r.innerHTML = "<span>" + formattaYen(y) + " ¥</span><span>" + formattaEuro(euroDaYen(y)) + " €</span>";
+      box.appendChild(r);
+    });
+    var c = leggiCambio();
+    document.getElementById("cambio-nota").textContent =
+      "1 € = " + c.eurJpy.toFixed(2) + " ¥ · aggiornato il " + dataLeggibile(c.quando);
+  }
+  function aggiornaRigaCambio() {
+    var el = document.getElementById("rm-cambio-sub");
+    if (el) el.textContent = "1 € = " + leggiCambio().eurJpy.toFixed(2) + " ¥";
+  }
+  var jpyEl = document.getElementById("cambio-jpy");
+  var eurEl = document.getElementById("cambio-eur");
+  jpyEl.addEventListener("input", function () {
+    var n = soloNumero(jpyEl.value);
+    eurEl.value = n == null ? "" : formattaEuro(euroDaYen(n));
+  });
+  eurEl.addEventListener("input", function () {
+    var n = soloNumero(eurEl.value);
+    jpyEl.value = n == null ? "" : formattaYen(n * leggiCambio().eurJpy);
+  });
+  function apriCambio() {
+    jpyEl.value = ""; eurEl.value = "";
+    renderScalaCambio();
+    cambioSheet.style.transform = "";
+    backdrop.classList.add("show");
+    cambioSheet.classList.add("show");
+    bloccaSfondo(true);
+    aggiornaCambio().then(function () { renderScalaCambio(); aggiornaRigaCambio(); });
+  }
+  function chiudiCambio() {
+    backdrop.classList.remove("show");
+    cambioSheet.classList.remove("show");
+    bloccaSfondo(false);
+  }
+  document.getElementById("cambio-close").addEventListener("click", chiudiCambio);
+  backdrop.addEventListener("click", chiudiCambio);
+  document.getElementById("riga-cambio").addEventListener("click", apriCambio);
+
+  /* ---------- diario ----------
+     Quattordici righe, una per giorno, e si apre solo quella che si tocca.
+     Si salva da solo mentre si scrive: di sera, stanchi, nessuno cerca il
+     tasto Salva. Solo testo: le foto stanno già nel rullino del telefono. */
+  var VOTI = [
+    { id: "bella", label: "Bella" },
+    { id: "bellissima", label: "Bellissima" },
+    { id: "da-ricordare", label: "Da ricordare" },
+  ];
+  var diarioSheet = document.getElementById("diario-sheet");
+  var salvaDiarioTimer = null;
+
+  function vociDiario() {
+    return Object.keys(state.diario).filter(function (k) {
+      return state.diario[k] && (state.diario[k].t || "").trim();
+    });
+  }
+  function aggiornaRigaDiario() {
+    var el = document.getElementById("rm-diario-sub");
+    if (!el) return;
+    var n = vociDiario().length;
+    el.textContent = n === 0 ? "Ancora niente scritto"
+      : n === 1 ? "Una giornata scritta" : n + " giornate scritte";
+  }
+  function salvaDiarioFraPoco() {
+    clearTimeout(salvaDiarioTimer);
+    salvaDiarioTimer = setTimeout(function () {
+      persist();
+      aggiornaRigaDiario();
+    }, 700);
+  }
+  function renderDiario() {
+    var box = document.getElementById("diario-body");
+    box.innerHTML = "";
+    DAYS.forEach(function (d) {
+      var voce = state.diario[d.id] || {};
+      var scritto = !!(voce.t || "").trim();
+      var el = document.createElement("div");
+      el.className = "dia-giorno" + (scritto ? " scritto" : "");
+      el.innerHTML =
+        '<div class="dia-testa">' +
+          '<div class="dia-data"><div class="dd-n">' + dayNum(d.date) + '</div><div class="dd-g">' + weekdayShort(d.date) + "</div></div>" +
+          '<div class="dia-corpo"><div class="dia-t">' + escapeHtml(d.city) + "</div>" +
+          '<div class="dia-s">' + escapeHtml(scritto ? voce.t.trim().replace(/\s+/g, " ") : d.theme) + "</div></div>" +
+          '<svg class="dia-apri" width="18" height="18"><use href="#ic-chev"/></svg>' +
+        "</div>" +
+        '<div class="dia-editor">' +
+          '<textarea placeholder="Cosa è successo oggi…"></textarea>' +
+          '<div class="dia-voti"></div>' +
+        "</div>";
+      var ta = el.querySelector("textarea");
+      ta.value = voce.t || "";
+      ta.addEventListener("input", function () {
+        state.diario[d.id] = Object.assign({}, state.diario[d.id], { t: ta.value });
+        el.classList.toggle("scritto", !!ta.value.trim());
+        el.querySelector(".dia-s").textContent = ta.value.trim() ? ta.value.trim().replace(/\s+/g, " ") : d.theme;
+        salvaDiarioFraPoco();
+      });
+      var voti = el.querySelector(".dia-voti");
+      VOTI.forEach(function (v) {
+        var p = document.createElement("div");
+        p.className = "pick" + (voce.v === v.id ? " sel" : "");
+        p.textContent = v.label;
+        p.addEventListener("click", function () {
+          var attuale = (state.diario[d.id] || {}).v;
+          var nuovo = attuale === v.id ? null : v.id;
+          state.diario[d.id] = Object.assign({}, state.diario[d.id], { v: nuovo, t: ta.value });
+          voti.querySelectorAll(".pick").forEach(function (x) { x.classList.remove("sel"); });
+          if (nuovo) p.classList.add("sel");
+          salvaDiarioFraPoco();
+        });
+        voti.appendChild(p);
+      });
+      el.querySelector(".dia-testa").addEventListener("click", function () {
+        var era = el.classList.contains("aperto");
+        box.querySelectorAll(".dia-giorno").forEach(function (x) { x.classList.remove("aperto"); });
+        if (!era) { el.classList.add("aperto"); setTimeout(function () { ta.focus(); }, 120); }
+      });
+      box.appendChild(el);
+    });
+  }
+  function apriDiario() {
+    renderDiario();
+    diarioSheet.style.transform = "";
+    backdrop.classList.add("show");
+    diarioSheet.classList.add("show");
+    bloccaSfondo(true);
+    // il giorno di oggi è quello che si vuole scrivere: si apre da solo
+    var oggi = defaultDay();
+    var indice = DAYS.findIndex(function (d) { return d.id === oggi; });
+    if (indice >= 0) {
+      var riga = document.getElementById("diario-body").children[indice];
+      if (riga) { riga.classList.add("aperto"); riga.scrollIntoView({ block: "center" }); }
+    }
+  }
+  function chiudiDiario() {
+    clearTimeout(salvaDiarioTimer);
+    persist();
+    aggiornaRigaDiario();
+    backdrop.classList.remove("show");
+    diarioSheet.classList.remove("show");
+    bloccaSfondo(false);
+  }
+  document.getElementById("diario-close").addEventListener("click", chiudiDiario);
+  backdrop.addEventListener("click", chiudiDiario);
+  document.getElementById("riga-diario").addEventListener("click", apriDiario);
+
   /* ---------- foglio budget extra ---------- */
   var budgetSheet = document.getElementById("budget-sheet");
   var bgWhoEl = document.getElementById("bg-who");
@@ -1879,6 +2262,10 @@ import {
   rendiTrascinabile(assignSheet, closeAssignSheet);
   rendiTrascinabile(budgetSheet, closeBudgetSheet);
   rendiTrascinabile(prenSheet, closePrenSheet);
+  rendiTrascinabile(cercaSheet, chiudiRicerca);
+  rendiTrascinabile(frasiSheet, chiudiFrasi);
+  rendiTrascinabile(cambioSheet, chiudiCambio);
+  rendiTrascinabile(diarioSheet, chiudiDiario);
 
   /* ---------- toast ---------- */
   var toastTimer = null;

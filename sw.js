@@ -6,7 +6,7 @@
 // Il numero nel nome della cache va alzato ogni volta che questo file cambia:
 // è quello che fa sì che una PWA già installata sul telefono butti via la
 // cache vecchia invece di restare bloccata su una copia obsoleta dei file.
-const CACHE_NAME = "travi-shell-v17";
+const CACHE_NAME = "travi-shell-v18";
 
 // Il guscio dell'app: tutto ciò che sta su GitHub Pages insieme a noi.
 const SHELL_FILES = [
@@ -19,6 +19,7 @@ const SHELL_FILES = [
   "./js/firebase-config.js",
   "./js/coords.js",
   "./js/orari.js",
+  "./js/frasi.js",
   "./js/giornata.js",
   "./js/cerca-luogo.js",
   "./js/foto.js",
@@ -119,6 +120,21 @@ function eLibreriaEsterna(url) {
   return url.includes("gstatic.com/firebasejs") || url.includes("cdnjs.cloudflare.com");
 }
 
+// I DATI VIVI: meteo, cambio euro/yen, ricerca di un posto, foto da Wikipedia.
+// Non sono file dell'app e non vanno serviti dalla cache per primi — una
+// previsione o un cambio di ieri, dati come se fossero di oggi, sono peggio di
+// un trattino. Vanno chiesti alla rete e usati dalla cache SOLO se la rete non
+// c'è: è la stessa regola del codice dell'app, ma qui va detta a parte perché
+// questi indirizzi non finiscono in .json e non verrebbero riconosciuti.
+function eDatiVivi(url) {
+  return url.includes("open-meteo.com") ||
+         url.includes("frankfurter.dev") ||
+         url.includes("frankfurter.app") ||
+         url.includes("open.er-api.com") ||
+         url.includes("nominatim.openstreetmap.org") ||
+         url.includes("wikipedia.org/api/");
+}
+
 // Strategia, in tre famiglie:
 // - servizi Firebase: solo rete, mai cache.
 // - librerie esterne: prima la cache (sono immutabili, hanno la versione
@@ -157,6 +173,7 @@ self.addEventListener("fetch", (event) => {
   try {
     isCode = isCode || /\.(html|js|css|json)$/.test(new URL(url).pathname);
   } catch (e) {}
+  isCode = isCode || eDatiVivi(url);
 
   if (isCode) {
     event.respondWith(
@@ -168,7 +185,17 @@ self.addEventListener("fetch", (event) => {
           }
           return resp;
         })
-        .catch(() => caches.match(event.request).then((c) => c || caches.match("./index.html")))
+        // Senza rete si ripiega sulla copia salvata. La pagina intera
+        // (index.html) è un ripiego valido solo per una NAVIGAZIONE: darla in
+        // risposta a una richiesta di meteo significherebbe consegnare
+        // dell'HTML a chi si aspetta dei numeri.
+        .catch(() =>
+          caches.match(event.request).then((c) => {
+            if (c) return c;
+            if (event.request.mode === "navigate") return caches.match("./index.html");
+            return Response.error();
+          })
+        )
     );
     return;
   }

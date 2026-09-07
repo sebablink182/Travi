@@ -1055,3 +1055,100 @@
   .rm-t{ font-weight:600; font-size:.92rem; }
   .rm-s{ font-size:.76rem; color:var(--text-muted); margin-top:1px; }
   .riga-menu .chev{ color:var(--text-faint); flex:none; }
+
+  /* ---------- ricerca ---------- */
+  .cerca-gruppo{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-faint);
+    font-weight:600; margin: 16px 0 6px;
+  }
+  .cerca-esito{
+    display:flex; align-items:center; gap:11px; padding:11px 12px; cursor:pointer;
+    background:var(--surface-2); border:1px solid var(--border); border-radius: var(--r-md);
+    margin-bottom:7px;
+  }
+  .cerca-esito .ce-ico{
+    flex:none; width:34px; height:34px; border-radius:11px; background:var(--surface);
+    border:1px solid var(--border); display:flex; align-items:center; justify-content:center;
+    color:var(--text-muted); background-size:cover; background-position:center;
+  }
+  .cerca-esito .ce-ico svg{ width:15px; height:15px; }
+  .cerca-esito .ce-corpo{ flex:1; min-width:0; }
+  .cerca-esito .ce-t{ font-weight:600; font-size:.9rem; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cerca-esito .ce-s{ font-size:.74rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .cerca-vuoto{ text-align:center; color:var(--text-muted); font-size:.85rem; padding:26px 10px; line-height:1.5; }
+
+  /* ---------- frasi in giapponese ----------
+     Il giapponese è grande apposta: quella riga non serve a noi, serve a
+     chi ci sta davanti quando gli si gira lo schermo. */
+  .frase-gruppo{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.07em; color:var(--text-faint);
+    font-weight:600; margin: 18px 0 7px;
+  }
+  .frase-nota{
+    font-size:.76rem; color:var(--text-muted); line-height:1.45; margin:-2px 0 9px; padding:0 2px;
+  }
+  .frase{
+    background:var(--surface-2); border:1px solid var(--border); border-radius: var(--r-md);
+    padding:11px 13px; margin-bottom:7px;
+  }
+  .frase .f-ja{ font-size:1.18rem; line-height:1.45; letter-spacing:.01em; }
+  .frase .f-ro{ font-size:.82rem; color:var(--accent); font-weight:600; margin-top:3px; }
+  .frase .f-it{ font-size:.82rem; color:var(--text-muted); margin-top:2px; line-height:1.4; }
+
+  /* ---------- yen ed euro ---------- */
+  .cambio-riga{ display:flex; align-items:flex-end; gap:10px; }
+  .cambio-campo{ flex:1; min-width:0; }
+  .cambio-campo label{
+    display:block; font-size:.7rem; text-transform:uppercase; letter-spacing:.06em;
+    color:var(--text-faint); font-weight:600; margin-bottom:5px;
+  }
+  .cambio-campo input{
+    width:100%; min-width:0; -webkit-appearance:none; appearance:none;
+    background:var(--surface-2); border:1px solid var(--border); border-radius: var(--r-md);
+    padding:13px 12px; font-size:1.4rem; font-weight:600; font-family:var(--font-display);
+    color:var(--text); text-align:right;
+  }
+  .cambio-eq{ padding-bottom:16px; color:var(--text-faint); font-size:1rem; }
+  .cambio-nota{ font-size:.75rem; color:var(--text-muted); margin-top:9px; text-align:center; }
+  .cambio-scala-riga{
+    display:flex; justify-content:space-between; padding:8px 12px;
+    border-bottom:1px solid var(--border); font-size:.86rem;
+  }
+  .cambio-scala-riga:last-child{ border-bottom:0; }
+  .cambio-scala-riga span:last-child{ font-weight:600; }
+  .cambio-aiuto{
+    margin-top:14px; padding:11px 13px; background:var(--surface-2);
+    border:1px solid var(--border); border-radius: var(--r-md);
+    font-size:.8rem; color:var(--text-muted); line-height:1.5;
+  }
+
+  /* ---------- diario ----------
+     Una riga per giorno, si apre solo quella su cui si tocca: scrivere in
+     viaggio si fa con una mano sola, di sera, stanchi. */
+  .dia-giorno{
+    background:var(--surface-2); border:1px solid var(--border); border-radius: var(--r-md);
+    margin-bottom:7px; overflow:hidden;
+  }
+  .dia-testa{ display:flex; align-items:center; gap:10px; padding:11px 13px; cursor:pointer; }
+  .dia-data{
+    flex:none; width:42px; text-align:center; font-family:var(--font-display);
+    line-height:1.05;
+  }
+  .dia-data .dd-n{ font-size:1.05rem; font-weight:600; }
+  .dia-data .dd-g{ font-size:.62rem; text-transform:uppercase; color:var(--text-faint); letter-spacing:.05em; }
+  .dia-corpo{ flex:1; min-width:0; }
+  .dia-t{ font-weight:600; font-size:.88rem; }
+  .dia-s{ font-size:.75rem; color:var(--text-muted); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .dia-giorno.scritto .dia-s{ color:var(--text); }
+  .dia-apri{ flex:none; color:var(--text-faint); transition: transform .18s ease; }
+  .dia-giorno.aperto .dia-apri{ transform: rotate(90deg); }
+  .dia-editor{ display:none; padding: 0 13px 13px; }
+  .dia-giorno.aperto .dia-editor{ display:block; }
+  .dia-editor textarea{
+    width:100%; min-width:0; -webkit-appearance:none; appearance:none;
+    background:var(--surface); border:1px solid var(--border); border-radius: var(--r-md);
+    padding:11px 12px; font-size:.92rem; font-family:inherit; color:var(--text);
+    line-height:1.55; min-height:110px; resize:none;
+  }
+  .dia-voti{ display:flex; gap:7px; margin-top:9px; }
+  .dia-salvato{ font-size:.72rem; color:var(--ok, #4CAF6C); margin-top:8px; }

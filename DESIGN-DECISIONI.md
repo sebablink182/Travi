@@ -111,9 +111,46 @@ Tre cambi grossi in un colpo solo, tutti richiesti insieme il 4/09:
   copia locale, e il service worker registrato da un modulo che dipendeva
   dalla rete. Ora l'app si riapre e funziona in metropolitana.
 
-Restano da costruire: Esplora, Diario, e il Budget come sezione a sé (oggi è
-un foglio richiamato da Home e da Altro) — il documento di architettura
-originale resta valido come piano per quelli.
+## ADOTTATO — cerca, frasi, cambio, diario (7 settembre 2026)
+
+Quattro aggiunte fatte di fila, tutte con la stessa logica: **roba che serve in
+viaggio e che non deve dipendere dalla rete**.
+
+- **Cerca** (la lente in Home e in Itinerario, che prima era decorativa): una
+  sola ricerca su tappe, preferiti e prenotazioni insieme. Toccare un
+  risultato porta al giorno giusto e apre la tappa. La domanda vera, con 52
+  tappe su 14 giorni, è "dove l'avevamo messo?", e non deve costare quattordici
+  tocchi sul calendario.
+- **Frasi in giapponese** (`js/frasi.js`, 66 frasi): dentro l'app, non su un
+  traduttore. Il gesto vero non è dire la frase, è **girare lo schermo verso
+  l'altra persona** — per questo la riga in giapponese è a 1.18rem e le altre
+  due (lettura latina, italiano) stanno sotto, piccole. La lettura latina è
+  Hepburn scritta come si legge in italiano.
+- **Yen ed euro**: il cambio si scarica quando c'è rete
+  (`api.frankfurter.dev`, senza chiave) e si tiene in `localStorage`; c'è un
+  valore di scorta nel codice così anche il primo avvio offline dà un numero.
+  Sotto, la tabella a colpo d'occhio: davanti a un menù non si digita, si
+  guarda.
+- **Diario**: una riga per giorno, si apre solo quella toccata, si salva da
+  solo dopo 700 ms. Niente tasto Salva: si scrive di sera, stanchi, con una
+  mano. **Solo testo** — le foto stanno già nel rullino, e un documento
+  Firestore ha un limite di 1 MB.
+
+Nella stessa giornata è saltata fuori una cosa che non c'entrava con le
+aggiunte: il service worker serviva **meteo, cambio, Nominatim e Wikipedia
+dalla cache** perché quegli indirizzi non finiscono in `.json` e cadevano nel
+ramo "prima la cache". Una previsione di ieri data per oggi è peggio di un
+trattino. Ora c'è `eDatiVivi()` in `sw.js`: rete prima, cache solo se la rete
+non c'è.
+
+Sugli **orari di apertura**: sembrava mancassero per 30 tappe su 52. Non
+mancano. Quelle 30 sono voli, trasferimenti, check-in, spedizioni bagagli e
+pomeriggi liberi — cose che un orario di apertura non ce l'hanno. Le tappe che
+sono davvero un posto hanno il loro orario. Non c'è niente da completare.
+
+Restano da costruire: Esplora e il Budget come sezione a sé (oggi è un foglio
+richiamato da Home e da Altro) — il documento di architettura originale resta
+valido come piano per quelli.
 
 ## Lo strumento di prova
 
