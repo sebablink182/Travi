@@ -93,6 +93,7 @@
   <symbol id="ic-wallet" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M19 7V4a1 1 0 0 0-1-1H5a2 2 0 0 0 0 4h15a1 1 0 0 1 1 1v4h-3a2 2 0 0 0 0 4h3a1 1 0 0 0 1-1v-2a1 1 0 0 0-1-1" /><path d="M3 5v14a2 2 0 0 0 2 2h15a1 1 0 0 0 1-1v-4" /></symbol>
   <symbol id="ic-ticket" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M2 9a3 3 0 0 1 0 6v2a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-2a3 3 0 0 1 0-6V7a2 2 0 0 0-2-2H4a2 2 0 0 0-2 2Z" /><path d="M13 5v2" /><path d="M13 17v2" /><path d="M13 11v2" /></symbol>
   <symbol id="ic-cal" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 2v3" /><path d="M16 2v3" /><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M3 9h18" /><path d="M8 13h.01" /><path d="M12 13h.01" /><path d="M16 13h.01" /><path d="M8 17h.01" /><path d="M12 17h.01" /><path d="M16 17h.01" /></symbol>
+  <symbol id="ic-bussola" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m16.24 7.76-1.804 5.411a2 2 0 0 1-1.265 1.265L7.76 16.24l1.804-5.411a2 2 0 0 1 1.265-1.265z" /><circle cx="12" cy="12" r="10" /></symbol>
   <symbol id="ic-diario" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M13.4 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-7.4" /><path d="M2 6h4" /><path d="M2 10h4" /><path d="M2 14h4" /><path d="M2 18h4" /><path d="M21.378 5.626a1 1 0 1 0-3.004-3.004l-5.01 5.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" /></symbol>
   <symbol id="ic-frasi" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m5 8 6 6" /><path d="m4 14 6-6 2-3" /><path d="M2 5h12" /><path d="M7 2h1" /><path d="m22 22-5-10-5 10" /><path d="M14 18h6" /></symbol>
   <symbol id="ic-cambio" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M8 3 4 7l4 4" /><path d="M4 7h16" /><path d="m16 21 4-4-4-4" /><path d="M20 17H4" /></symbol>
@@ -226,7 +227,10 @@
       <div class="scroll">
         <div class="topbar">
           <span class="display" style="font-size:1.25rem;">Preferiti</span>
-          <div class="icon-btn" id="btn-add-fav"><svg><use href="#ic-plus"/></svg></div>
+          <div style="display:flex; gap:8px;">
+            <div class="icon-btn" id="btn-idee"><svg><use href="#ic-bussola"/></svg></div>
+            <div class="icon-btn" id="btn-add-fav"><svg><use href="#ic-plus"/></svg></div>
+          </div>
         </div>
         <div class="fav-groups" id="fav-groups"></div>
       </div>
@@ -408,6 +412,17 @@
     <div id="cerca-esiti"></div>
   </div>
 </div>
+<div class="sheet" id="idee-sheet">
+  <div class="sheet-grip"></div>
+  <div class="sheet-head">
+    <strong style="font-family:var(--font-display); font-size:1.05rem;">Idee per città</strong>
+    <button class="x" id="idee-close">✕</button>
+  </div>
+  <div class="sheet-body">
+    <div class="idee-citta" id="idee-citta"></div>
+    <div id="idee-lista"></div>
+  </div>
+</div>
 <div class="sheet" id="frasi-sheet">
   <div class="sheet-grip"></div>
   <div class="sheet-head">
@@ -527,6 +542,7 @@
 <script src="js/coords.js"></script>
 <script src="js/orari.js"></script>
 <script src="js/frasi.js"></script>
+<script src="js/idee.js"></script>
 <script src="js/giornata.js"></script>
 <script src="js/cerca-luogo.js"></script>
 <script src="js/foto.js"></script>

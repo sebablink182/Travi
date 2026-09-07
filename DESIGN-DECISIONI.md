@@ -148,7 +148,28 @@ mancano. Quelle 30 sono voli, trasferimenti, check-in, spedizioni bagagli e
 pomeriggi liberi — cose che un orario di apertura non ce l'hanno. Le tappe che
 sono davvero un posto hanno il loro orario. Non c'è niente da completare.
 
-Restano da costruire: Esplora e il Budget come sezione a sé (oggi è un foglio
+## ADOTTATO — Esplora dentro i Preferiti, non come sesto tab (7 settembre 2026)
+
+L'architettura originale prevedeva **Esplora** come sezione a sé. Non è stata
+fatta così: i tab sono già cinque, e un sesto avrebbe stretto la pillola per
+niente. Esplora è invece la **bussola in alto nei Preferiti** — che è dove
+finisce comunque quello che si trova.
+
+Il giro è: idea → cuore → preferito (con posizione e foto già dentro) →
+"Pianifica" → giorno vero. **Nessuna strada nuova**: la parte difficile
+(verificare che in quel giorno ci sia spazio) era già costruita e collaudata, e
+Esplora ci si aggancia invece di rifarla.
+
+Il contenuto (`js/idee.js`) sono **40 idee controllate su fonti vere**, non
+generate a memoria: orari, giorni di chiusura, prenotazioni obbligatorie,
+prezzi, e se il posto esiste ancora. Due candidate sono state **scartate** dopo
+la verifica — la crociera GINGA di Hiroshima sta chiudendo, e il kagura va solo
+il mercoledì mentre a Hiroshima ci siamo di venerdì. Due giorni del viaggio
+cadono di **lunedì** (Kanazawa e Osaka) e questo ha escluso i musei ovvi di
+entrambe: l'avviso in cima al gruppo lo dice, invece di far scoprire la porta
+chiusa sul posto.
+
+Restano da costruire: il Budget come sezione a sé (oggi è un foglio
 richiamato da Home e da Altro) — il documento di architettura originale resta
 valido come piano per quelli.
 

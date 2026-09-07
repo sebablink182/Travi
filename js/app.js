@@ -1852,6 +1852,122 @@ import {
     b.addEventListener("click", apriRicerca);
   });
 
+  /* ---------- idee per città ----------
+     Il pezzo che mancava fra "che si fa questo pomeriggio?" e il piano. Nel
+     piano ci sono già i posti grossi; qui ci sono gli altri, controllati uno
+     per uno su fonti vere (js/idee.js). Un tocco e l'idea diventa un
+     preferito: da lì "Pianifica" la mette nel giorno dove ci sta davvero,
+     con la stessa strada già collaudata. Nessuna scorciatoia nuova. */
+  var ideeSheet = document.getElementById("idee-sheet");
+  var ideaCitta = null;
+
+  function cittaDelViaggio() {
+    // Le città nell'ordine in cui si incontrano, non in ordine alfabetico: la
+    // prima pillola è dove si è, non dove capita.
+    var viste = [];
+    DAYS.forEach(function (d) {
+      (window.TRAVI_IDEE || []).forEach(function (g) {
+        if (d.city.indexOf(g.citta) !== -1 && viste.indexOf(g.citta) === -1) viste.push(g.citta);
+      });
+    });
+    (window.TRAVI_IDEE || []).forEach(function (g) {
+      if (viste.indexOf(g.citta) === -1) viste.push(g.citta);
+    });
+    return viste;
+  }
+  function cittaDiOggi() {
+    var d = DAYS.find(function (x) { return x.id === defaultDay(); });
+    var lista = cittaDelViaggio();
+    var trovata = d && lista.find(function (c) { return d.city.indexOf(c) !== -1; });
+    return trovata || lista[0];
+  }
+  function gruppoIdee(citta) {
+    return (window.TRAVI_IDEE || []).find(function (g) { return g.citta === citta; });
+  }
+  function giaPreferito(idea) {
+    return state.favorites.some(function (f) { return normalizza(f.title) === normalizza(idea.titolo); });
+  }
+  function salvaIdea(idea) {
+    if (giaPreferito(idea)) { toast("Già nei preferiti"); return; }
+    var fav = {
+      id: "fav-" + Date.now(),
+      title: idea.titolo,
+      sub: idea.zona,
+      cat: "experience",
+      prio: "norm",
+      notes: [idea.perche, idea.quando, idea.nota].filter(Boolean).join("\n"),
+      createdAt: Date.now(),
+      lat: idea.lat, lon: idea.lon,
+      dur: idea.durata,
+    };
+    state.favorites.push(fav);
+    persist();
+    renderIdee();
+    toast("Aggiunto ai preferiti");
+    // La foto arriva dopo, come per ogni preferito scritto a mano.
+    if (window.TraviFoto) {
+      window.TraviFoto.cerca(idea.titolo + " " + idea.zona).then(function (url) {
+        if (!url) return;
+        state.favorites = state.favorites.map(function (f) {
+          return f.id === fav.id ? Object.assign({}, f, { foto: url }) : f;
+        });
+        persist();
+      });
+    }
+  }
+  function renderIdee() {
+    var pillole = document.getElementById("idee-citta");
+    var box = document.getElementById("idee-lista");
+    pillole.innerHTML = "";
+    box.innerHTML = "";
+    cittaDelViaggio().forEach(function (c) {
+      var p = document.createElement("div");
+      p.className = "pick" + (c === ideaCitta ? " sel" : "");
+      p.textContent = c;
+      p.addEventListener("click", function () { ideaCitta = c; renderIdee(); });
+      pillole.appendChild(p);
+    });
+    var g = gruppoIdee(ideaCitta);
+    if (!g) return;
+    if (g.nota) {
+      var av = document.createElement("div");
+      av.className = "idee-avviso";
+      av.textContent = g.nota;
+      box.appendChild(av);
+    }
+    g.voci.forEach(function (idea) {
+      var gia = giaPreferito(idea);
+      var el = document.createElement("div");
+      el.className = "idea" + (gia ? " gia" : "");
+      el.innerHTML =
+        '<div class="i-testa"><div><div class="i-t">' + escapeHtml(idea.titolo) + "</div>" +
+        '<div class="i-z">' + escapeHtml(idea.zona) + "</div></div>" +
+        '<div class="idea-salva"><svg><use href="#' + (gia ? "ic-check" : "ic-heart") + '"/></svg></div></div>' +
+        '<div class="i-p">' + escapeHtml(idea.perche) + "</div>" +
+        '<div class="i-meta"><div class="i-tag">' + escapeHtml(idea.quando) + "</div>" +
+        '<div class="i-tag">' + idea.durata + " min</div></div>" +
+        (idea.nota ? '<div class="i-nota">' + escapeHtml(idea.nota) + "</div>" : "");
+      el.querySelector(".idea-salva").addEventListener("click", function () { salvaIdea(idea); });
+      box.appendChild(el);
+    });
+  }
+  function apriIdee() {
+    ideaCitta = ideaCitta || cittaDiOggi();
+    renderIdee();
+    ideeSheet.style.transform = "";
+    backdrop.classList.add("show");
+    ideeSheet.classList.add("show");
+    bloccaSfondo(true);
+  }
+  function chiudiIdee() {
+    backdrop.classList.remove("show");
+    ideeSheet.classList.remove("show");
+    bloccaSfondo(false);
+  }
+  document.getElementById("idee-close").addEventListener("click", chiudiIdee);
+  backdrop.addEventListener("click", chiudiIdee);
+  document.getElementById("btn-idee").addEventListener("click", apriIdee);
+
   /* ---------- frasi in giapponese ----------
      Tutto dentro l'app, niente traduttore: nella metropolitana di Tokyo non
      c'è campo e al banco di un izakaya non si ha il tempo di aspettare che
@@ -2263,6 +2379,7 @@ import {
   rendiTrascinabile(budgetSheet, closeBudgetSheet);
   rendiTrascinabile(prenSheet, closePrenSheet);
   rendiTrascinabile(cercaSheet, chiudiRicerca);
+  rendiTrascinabile(ideeSheet, chiudiIdee);
   rendiTrascinabile(frasiSheet, chiudiFrasi);
   rendiTrascinabile(cambioSheet, chiudiCambio);
   rendiTrascinabile(diarioSheet, chiudiDiario);

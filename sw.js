@@ -6,7 +6,7 @@
 // Il numero nel nome della cache va alzato ogni volta che questo file cambia:
 // è quello che fa sì che una PWA già installata sul telefono butti via la
 // cache vecchia invece di restare bloccata su una copia obsoleta dei file.
-const CACHE_NAME = "travi-shell-v18";
+const CACHE_NAME = "travi-shell-v19";
 
 // Il guscio dell'app: tutto ciò che sta su GitHub Pages insieme a noi.
 const SHELL_FILES = [
@@ -20,6 +20,7 @@ const SHELL_FILES = [
   "./js/coords.js",
   "./js/orari.js",
   "./js/frasi.js",
+  "./js/idee.js",
   "./js/giornata.js",
   "./js/cerca-luogo.js",
   "./js/foto.js",

@@ -1152,3 +1152,45 @@
   }
   .dia-voti{ display:flex; gap:7px; margin-top:9px; }
   .dia-salvato{ font-size:.72rem; color:var(--ok, #4CAF6C); margin-top:8px; }
+
+  /* ---------- idee per città ----------
+     Le città in cima sono pillole scorrevoli: il viaggio ne tocca sette e
+     nessuno vuole scorrere quaranta schede per arrivare a Osaka. */
+  .idee-citta{
+    display:flex; gap:7px; overflow-x:auto; padding: 2px 0 12px;
+    -webkit-overflow-scrolling:touch; scrollbar-width:none;
+  }
+  .idee-citta::-webkit-scrollbar{ display:none; }
+  .idee-citta .pick{ flex:none; white-space:nowrap; }
+  .idea{
+    background:var(--surface-2); border:1px solid var(--border); border-radius: var(--r-md);
+    padding:13px 14px; margin-bottom:9px;
+  }
+  .idea .i-testa{ display:flex; align-items:flex-start; gap:10px; }
+  .idea .i-testa > div:first-child{ flex:1; min-width:0; }
+  .idea .i-t{ font-weight:600; font-size:.95rem; line-height:1.3; }
+  .idea .i-z{ font-size:.74rem; color:var(--text-faint); margin-top:2px; }
+  .idea .i-p{ font-size:.85rem; color:var(--text); line-height:1.5; margin-top:8px; }
+  .idea .i-meta{
+    display:flex; flex-wrap:wrap; gap:6px; margin-top:9px;
+  }
+  .idea .i-tag{
+    font-size:.71rem; color:var(--text-muted); background:var(--surface);
+    border:1px solid var(--border); border-radius: var(--r-pill); padding:4px 9px;
+  }
+  .idea .i-nota{
+    font-size:.75rem; color:var(--text-muted); line-height:1.45; margin-top:9px;
+    padding-left:9px; border-left:2px solid var(--border);
+  }
+  .idea-salva{
+    flex:none; width:34px; height:34px; border-radius:50%; border:1px solid var(--border);
+    background:var(--surface); color:var(--text-muted); display:flex; align-items:center;
+    justify-content:center; cursor:pointer;
+  }
+  .idea-salva svg{ width:16px; height:16px; }
+  .idea.gia .idea-salva{ background:var(--accent); border-color:var(--accent); color:#fff; }
+  .idee-avviso{
+    font-size:.78rem; color:var(--text-muted); line-height:1.5; margin: 0 0 12px;
+    padding:10px 12px; background:var(--surface-2); border:1px solid var(--border);
+    border-radius: var(--r-md);
+  }

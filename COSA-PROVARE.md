@@ -184,6 +184,33 @@ Da fare con calma, è quella che conta di più per il viaggio.
       lì** (anche da un altro telefono: passa da Firestore).
 - [ ] **13.6** La riga in Altro conta le giornate scritte.
 
+## 14. Idee per città (nuovo — Preferiti › bussola in alto)
+
+Questa è la risposta a "e nei pomeriggi liberi cosa facciamo?".
+
+- [ ] **14.1** In Preferiti, in alto a sinistra del **+**, c'è la **bussola**:
+      la apre.
+- [ ] **14.2** Le pillole in cima sono le **città del viaggio, nell'ordine in
+      cui le incontriamo**, e parte già da quella del giorno.
+- [ ] **14.3** Ogni idea dice **perché** (in una riga, concreta), **quando**
+      andarci e **quanto dura**; se c'è da prenotare o da pagare, lo dice.
+- [ ] **14.4** Toccando il **cuore**, l'idea diventa un **preferito vero**, con
+      posizione e foto: quindi è già pronta per la Mappa.
+- [ ] **14.5** L'idea salvata resta **segnata con la spunta arancione**, così
+      non si salva due volte.
+- [ ] **14.6** Dal preferito, **"Pianifica"** funziona come sempre: propone i
+      giorni dove ci sta davvero.
+- [ ] **14.7** Su **Kanazawa** e **Osaka** c'è l'avviso che quei due giorni sono
+      lunedì (musei chiusi); su **Miyajima** c'è la tassa d'ingresso da 100 ¥.
+
+**Sono 40 idee, controllate una per una su fonti vere il 7 settembre 2026** —
+orari, giorni di chiusura, prenotazioni, prezzi, e se il posto esiste ancora.
+Due sono state scartate proprio per questo: la crociera GINGA di Hiroshima (sta
+chiudendo) e lo spettacolo di kagura (va solo il mercoledì, e a Hiroshima ci
+siamo di venerdì). Vanno **ricontrollate nei mesi prima di partire**: per il
+2027 alcuni calendari non erano ancora usciti (le partite dei Carp, la stagione
+del bar sul tetto della Orizuru Tower, le mostre del Nezu).
+
 ---
 
 ## Cose che ho corretto perché si erano rotte (le stesse prove le fa già la macchina)
@@ -206,8 +233,8 @@ qualcosa di nuovo:
 
 ## La prova automatica
 
-`node _tools/prova.js` — **53 verifiche**, tutte superate al momento della
+`node _tools/prova.js` — **62 verifiche**, tutte superate al momento della
 consegna. Apre l'app vera in un browser e ci si comporta come un dito: cambia
 le cinque pagine, apre e trascina i fogli, salva un preferito e una
-prenotazione, scrive sul diario, converte gli yen, accende la posizione, spegne
-la rete. Si lancia prima di ogni pubblicazione.
+prenotazione, salva un'idea e la pianifica, scrive sul diario, converte gli
+yen, accende la posizione, spegne la rete. Si lancia prima di ogni pubblicazione.
