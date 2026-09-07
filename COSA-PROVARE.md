@@ -10,6 +10,24 @@
 >
 > Ultimo aggiornamento: 7 settembre 2026.
 
+## 0. Accesso ⚠️ (era rotto, sistemato il 7/09)
+
+- [ ] **0.1** Con email e password giuste **si entra**, senza che la pagina si
+      ricarichi e riporti alla schermata di accesso.
+- [ ] **0.2** Con la password sbagliata compare il messaggio **"Email o
+      password non corretti"**, non un ricaricamento muto.
+- [ ] **0.3** Chiudendo e riaprendo l'app **non richiede di nuovo l'accesso**.
+
+Cos'era: il pezzo di codice che intercetta l'invio del modulo era sparito da
+`app.js` insieme al vecchio gesto nascosto di uscita, quando quello è stato
+sostituito dalla riga in Altro. Senza quel pezzo, premere Accedi fa un invio
+normale del modulo: la pagina si ricarica e si ritorna al punto di partenza —
+esattamente il loop che hai visto. La prova automatica non l'aveva preso perché
+sostituiva Firebase con una finzione che risultava **già dentro**: la schermata
+di accesso non veniva mai toccata. Ora la finzione parte **scollegata** e ci
+sono sei verifiche apposta sul login, compresa una che si accorge se la pagina
+si ricarica.
+
 ---
 
 ## 1. Home

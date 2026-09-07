@@ -116,6 +116,44 @@ import {
     signOut(auth);
   }
 
+  // ⚠️ NON TOGLIERE QUESTO BLOCCO. È sparito una volta (7/09/2026) insieme al
+  // vecchio gesto nascosto di uscita che gli stava accanto, e il risultato era
+  // un login che sembrava un loop: senza preventDefault il form fa un invio
+  // normale, la pagina si ricarica, e si torna alla schermata di accesso senza
+  // nessun messaggio di errore. Nessuno se n'era accorto perché la prova
+  // automatica sostituisce Firebase e parte già dentro: ora c'è anche una
+  // verifica apposta sul login (vedi _tools/prova.js).
+  loginForm.addEventListener("submit", function (e) {
+    e.preventDefault();
+    // trim/lowercase per evitare falsi "password sbagliata" causati da
+    // autofill/tastiera del telefono (spazi accidentali, maiuscola automatica
+    // a inizio email): Firebase confronta comunque l'email senza distinguere
+    // maiuscole e minuscole.
+    var email = document.getElementById("login-email").value.trim().toLowerCase();
+    var password = document.getElementById("login-password").value.trim();
+    loginError.textContent = "";
+    loginSubmit.disabled = true;
+    loginSubmit.textContent = "Accesso in corso…";
+    signInWithEmailAndPassword(auth, email, password).catch(function (err) {
+      var code = err && err.code ? err.code : "";
+      var msg;
+      if (code === "auth/wrong-password" || code === "auth/user-not-found" || code === "auth/invalid-credential") {
+        msg = "Email o password non corretti.";
+      } else if (code === "auth/invalid-api-key" || code === "auth/api-key-not-valid") {
+        msg = "Configurazione Firebase non valida: js/firebase-config.js ha valori sbagliati. Non è un problema di password.";
+      } else if (code === "auth/network-request-failed") {
+        msg = "Impossibile contattare Firebase: controllate la connessione.";
+      } else if (code === "auth/too-many-requests") {
+        msg = "Troppi tentativi ravvicinati: aspettate qualche minuto e riprovate.";
+      } else {
+        msg = "Errore di accesso (" + (code || "sconosciuto") + "): " + err.message;
+      }
+      loginError.textContent = msg;
+      loginSubmit.disabled = false;
+      loginSubmit.textContent = "Accedi";
+    });
+  });
+
   onAuthStateChanged(auth, function (user) {
     if (user) {
       loginGate.hidden = true;
