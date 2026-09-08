@@ -24,3 +24,9 @@ _shot-app.mjs
 # da tenere sul PC per poterci tornare. Pesano, e non c'entrano niente con
 # l'app pubblicata
 _salvataggi/
+
+# Nessun archivio .zip deve finire nel repository PUBBLICO: dentro uno zip
+# il .gitignore non protegge niente, e l'8/09/2026 e' successo davvero —
+# seed-data.local.js (date, hotel, volo, tappe vere) era dentro due zip
+# pubblicati. Regola secca: nessuno zip qui dentro.
+*.zip
