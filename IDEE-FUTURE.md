@@ -76,6 +76,40 @@ accanto.
 - I dati dell'itinerario passerebbero dall'API di Anthropic. Sono nomi di
   posti e orari, niente di sensibile, ma va detto.
 
+### Perche' oggi si passa ancora dal PC di Seb (verificato l'8/09/2026)
+
+Sarebbe molto meglio pubblicare direttamente dal contenitore di Claude: il PC
+potrebbe stare spento, senza rete, o non esistere. **Non si puo', e non per
+colpa di come e' fatto il progetto.**
+
+Le sessioni Cowork nel cloud passano da un proxy git che accetta di firmare le
+richieste solo verso i repository presenti in un "authorized repository set"
+della sessione. Il messaggio di rifiuto dice di aggiungere il repository alle
+"sources"... ma **quella voce non esiste da nessuna parte** nell'app: ne' nelle
+impostazioni, ne' come comando. E' un problema noto e aperto:
+
+- github.com/anthropics/claude-code/issues/76248 — "git proxy now blocks all
+  pushes", aperto il 10 luglio 2026, tuttora aperto. Segnala anche che i token
+  personali (PAT) non passano piu': il proxy li sostituisce con i propri.
+
+Confermato dall'interno: in questo contenitore la variabile
+`CCR_TEST_GITPROXY=1` e' effettivamente impostata, ed e' la stessa citata nel
+ticket. Il push viene rifiutato; la lettura (clone) invece funziona.
+
+Da NON fare: cercare scorciatoie per aggirare il proxy. E' un controllo di
+sicurezza dell'ambiente, non un ostacolo tecnico da superare.
+
+**Cosa si fa quindi.** Si tiene il pubblicatore sul PC (invisibile, vedi
+`_tools/`), e a ogni nuova sessione si riprova il push in trenta secondi: il
+giorno che passa, si passa. Tutto e' gia' pronto per quel momento — la copia
+nel contenitore e' un clone vero del repository.
+
+**La via d'emergenza senza nessun PC**, da ricordare per il viaggio: i file
+arrivano comunque in chat, e su github.com si possono caricare da un browser
+qualsiasi, anche dal telefono (Add file > Upload files sul repository). Lenta e
+scomoda, ma se in Giappone si rompe qualcosa e il PC di casa e' spento, l'app
+si aggiorna lo stesso.
+
 ---
 
 ## 2. Piano B pioggia
