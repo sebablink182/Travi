@@ -463,9 +463,21 @@
   /* Giorno attivo: riempimento d'accento dentro la pillola, esattamente come
      il tab attivo dentro la pillola di navigazione. */
   .daypill.active{ background: var(--accent); }
-  .city-heading{ padding: 10px 16px 0; display:flex; align-items:baseline; gap:8px; }
+  .city-heading{ padding: 10px 16px 0; display:flex; align-items:flex-end; justify-content:space-between; gap:8px; }
   .city-heading h2{ margin:0; font-size:1.3rem; }
   .city-heading span{ font-size:.78rem; color:var(--text-muted); }
+  /* Interruttore lista/striscia: due tasti piccoli, quello attivo pieno come
+     la pagina attiva nella pillola in basso — stessa grammatica di tutto il
+     resto dell'app. */
+  .vista-switch{ flex:none; display:flex; gap:3px; background:var(--surface-2);
+    border:1px solid var(--border); border-radius: var(--r-pill); padding:3px; }
+  .vista-switch .vs-b{
+    border:none; background:transparent; color:var(--text-faint); cursor:pointer;
+    width:32px; height:26px; border-radius: var(--r-pill); display:flex;
+    align-items:center; justify-content:center; padding:0;
+  }
+  .vista-switch .vs-b svg{ width:15px; height:15px; }
+  .vista-switch .vs-b.sel{ background:var(--accent); color:#fff; }
 
   /* ---------- itinerary list ---------- */
   /* Ridisegnata il 4/09: foto più grande e protagonista, orario spostato
@@ -1194,3 +1206,145 @@
     padding:10px 12px; background:var(--surface-2); border:1px solid var(--border);
     border-radius: var(--r-md);
   }
+
+  /* ---------- la striscia della giornata ----------
+     La lista dice COSA c'è. La striscia dice che FORMA ha la giornata: i
+     blocchi sono in scala col tempo, quindi due ore di tempio sono alte il
+     doppio di un'ora di pranzo, gli spostamenti si vedono come sono, e i
+     buchi liberi restano vuoti — è lì che si capisce dove si può infilare
+     qualcosa e dove invece è tutto incastrato al minuto.
+
+     I blocchi sono posizionati in assoluto sull'orario vero (top = minuti
+     dall'inizio × scala), non impilati uno dopo l'altro: così le etichette
+     dell'ora a sinistra corrispondono davvero a dove stanno le cose. */
+  .striscia{ padding: 14px 16px 0; }
+  .striscia-corpo{ position:relative; margin-left:44px; }
+  .striscia-ora{
+    position:absolute; left:-44px; width:40px; text-align:right;
+    font-size:.66rem; color:var(--text-faint); font-variant-numeric:tabular-nums;
+    transform: translateY(-6px);
+  }
+  .striscia-linea{
+    position:absolute; left:0; right:0; height:1px; background:var(--border); opacity:.7;
+  }
+  .sblocco{
+    position:absolute; left:0; right:0; border-radius: var(--r-md);
+    background:var(--surface-2); border:1px solid var(--border);
+    border-left:3px solid var(--fogblue);
+    padding:6px 10px; overflow:hidden; cursor:pointer;
+  }
+  .sblocco .sb-t{
+    font-weight:600; font-size:.84rem; line-height:1.25;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis;
+  }
+  .sblocco .sb-s{ font-size:.7rem; color:var(--text-muted); margin-top:1px; }
+  .sblocco.fatta{ opacity:.5; }
+  .sblocco.fatta .sb-t{ text-decoration: line-through; }
+  .sblocco.stretta{ border-left-color: var(--amber); }
+  .sblocco.chiusa{ border-left-color: var(--accent); background:#FDF0EE; }
+  .sblocco .sb-avviso{ font-size:.68rem; color:var(--accent); margin-top:2px; font-weight:600; }
+  /* Lo spostamento non è una tappa: è tempo che passa fra due tappe. Si
+     disegna sottile e tratteggiato apposta, per non farlo sembrare una cosa
+     che si "fa". */
+  .sviaggio{
+    position:absolute; left:0; right:0; display:flex; align-items:center; gap:5px;
+    padding-left:6px; font-size:.68rem; color:var(--text-muted);
+    border-left:2px dotted var(--text-faint); margin-left:1px;
+  }
+  .sviaggio svg{ width:12px; height:12px; flex:none; }
+  .sbuco{
+    position:absolute; left:0; right:0; border-radius: var(--r-md);
+    border:1px dashed var(--border); display:flex; align-items:center;
+    justify-content:center; font-size:.7rem; color:var(--text-faint);
+  }
+  .striscia-vuota{ text-align:center; color:var(--text-muted); padding:30px 10px; font-size:.85rem; }
+  .striscia-legenda{
+    display:flex; gap:14px; justify-content:center; flex-wrap:wrap;
+    margin-top:14px; font-size:.68rem; color:var(--text-faint);
+  }
+  .striscia-legenda i{ font-style:normal; display:inline-flex; align-items:center; gap:5px; }
+  .striscia-legenda b{ width:9px; height:9px; border-radius:3px; display:inline-block; }
+
+  /* ---------- modalità cammino ("adesso") ----------
+     La lista dell'itinerario è la vista di chi pianifica dal divano. Questa è
+     la vista di chi sta camminando: una cosa sola, grande, leggibile con il
+     telefono in mano e il sole in faccia, e la risposta all'unica domanda che
+     conta in quel momento — quanto manca, e ci arrivo in tempo?
+     È a schermo intero e non un foglio, perché non è un dettaglio di
+     qualcos'altro: per quelle ore è l'app. Si chiude tirandola giù, come i
+     fogli, così il gesto è già noto. */
+  .adesso-apri{
+    margin:14px 16px 0; padding:14px; border-radius: var(--r-pill); border:none;
+    background:var(--text); color:var(--bg); font-size:.9rem; font-weight:600;
+    cursor:pointer; display:flex; align-items:center; justify-content:center;
+    gap:8px; width:calc(100% - 32px);
+  }
+  .adesso{
+    position:fixed; left:50%; top:0; transform: translate(-50%, 100%); width:100%;
+    max-width:448px; height:100%; background:var(--surface); z-index:44;
+    display:flex; flex-direction:column;
+    transition: transform .32s cubic-bezier(.32,.72,.35,1);
+    padding-top: env(safe-area-inset-top);
+  }
+  .adesso.show{ transform: translate(-50%, 0); }
+  .adesso-testa{ display:flex; justify-content:space-between; align-items:center; padding:10px 18px 0; }
+  .ad-ora{ font-size:.8rem; color:var(--text-muted); font-variant-numeric:tabular-nums; }
+  .ad-ora span{ font-weight:600; color:var(--text); }
+  .ad-ora em{ font-style:normal; }
+  .adesso-testa .x{
+    background:var(--surface-2); border:none; width:32px; height:32px; border-radius:50%;
+    color:var(--text-muted); cursor:pointer; font-size:15px; line-height:1;
+  }
+  .adesso-corpo{
+    flex:1; min-height:0; overflow-y:auto; -webkit-overflow-scrolling:touch;
+    display:flex; flex-direction:column; padding: 0 22px calc(24px + env(safe-area-inset-bottom));
+  }
+  /* Leggermente sopra il centro esatto: otticamente, un blocco centrato
+     matematicamente in una colonna con i tasti in fondo sembra basso. */
+  .ad-centro{ flex:1; display:flex; flex-direction:column; justify-content:center; min-height:0; padding-bottom:38px; }
+  .ad-etichetta{
+    font-size:.7rem; text-transform:uppercase; letter-spacing:.09em;
+    color:var(--text-faint); font-weight:600;
+  }
+  .ad-titolo{
+    font-family:var(--font-display); font-size:2.1rem; line-height:1.12;
+    font-weight:600; margin-top:8px;
+  }
+  .ad-zona{ font-size:.9rem; color:var(--text-muted); margin-top:6px; }
+  /* La distanza è il numero che si guarda camminando: va grande quanto il nome. */
+  .ad-distanza{
+    display:flex; align-items:baseline; gap:10px; margin-top:22px;
+    font-family:var(--font-display);
+  }
+  .ad-distanza b{ font-size:2.4rem; font-weight:600; line-height:1; }
+  .ad-distanza span{ font-size:.95rem; color:var(--text-muted); }
+  .ad-riga{
+    display:flex; align-items:center; gap:9px; margin-top:14px;
+    font-size:.92rem; color:var(--text);
+  }
+  .ad-riga svg{ width:16px; height:16px; flex:none; color:var(--text-muted); }
+  .ad-stato{
+    margin-top:18px; padding:12px 14px; border-radius: var(--r-md);
+    font-size:.88rem; line-height:1.45;
+    background:var(--surface-2); border:1px solid var(--border);
+  }
+  .ad-stato.bene{ background:#EEF7F1; border-color:#D6EADD; }
+  .ad-stato.tardi{ background:#FDF0EE; border-color:#F6D9D4; }
+  .ad-poi{
+    margin-top:20px; padding-top:14px; border-top:1px solid var(--border);
+    font-size:.82rem; color:var(--text-muted);
+  }
+  .ad-poi b{ color:var(--text); font-weight:600; }
+  .ad-azioni{ display:flex; flex-direction:column; gap:9px; padding-top:18px; }
+  .ad-primario{
+    padding:16px; border-radius: var(--r-pill); border:none; background:var(--accent);
+    color:#fff; font-size:1rem; font-weight:600; cursor:pointer;
+  }
+  .ad-secondarie{ display:flex; gap:9px; }
+  .ad-secondarie button, .ad-secondarie a{
+    flex:1; padding:13px; border-radius: var(--r-pill); border:1px solid var(--border);
+    background:var(--surface-2); color:var(--text); font-size:.86rem; font-weight:600;
+    cursor:pointer; text-align:center; text-decoration:none;
+    display:flex; align-items:center; justify-content:center; gap:6px;
+  }
+  .ad-finita{ text-align:center; color:var(--text-muted); font-size:1rem; line-height:1.6; }

@@ -229,6 +229,46 @@ siamo di venerdì). Vanno **ricontrollate nei mesi prima di partire**: per il
 2027 alcuni calendari non erano ancora usciti (le partite dei Carp, la stagione
 del bar sul tetto della Orizuru Tower, le mostre del Nezu).
 
+## 15. La striscia della giornata (nuovo — Itinerario)
+
+- [ ] **15.1** In alto a destra, accanto al nome della città, ci sono **due
+      tastini**: lista e striscia. Il secondo cambia vista.
+- [ ] **15.2** Nella striscia i blocchi sono **alti in proporzione al tempo**:
+      due ore di tempio sono alte il doppio di un'ora di pranzo. È tutto il
+      punto — se non è così, dimmelo subito.
+- [ ] **15.3** A sinistra c'è il **righello delle ore**, e le tappe stanno
+      davvero all'altezza della loro ora.
+- [ ] **15.4** Fra una tappa e l'altra si vedono gli **spostamenti**
+      (tratteggiati, con l'icona del mezzo) e i **buchi liberi** ("1h 20min
+      liberi").
+- [ ] **15.5** Se una tappa **non ce la fa** prima della chiusura, il blocco è
+      segnato in arancione/rosso con scritto perché.
+- [ ] **15.6** Toccando un blocco si apre la tappa, come dalla lista.
+- [ ] **15.7** La scelta lista/striscia **resta** anche chiudendo e riaprendo
+      l'app.
+- [ ] **15.8** Prova a guardare un giorno pieno (il 7, il 9, il 13): è lì che
+      si capisce se serve davvero.
+
+## 16. Modalità cammino (nuovo — Itinerario)
+
+- [ ] **16.1** Sopra la lista c'è il tasto nero **"Modalità cammino"**.
+- [ ] **16.2** Si apre a **schermo intero**: una tappa sola, grande, con la
+      zona sotto.
+- [ ] **16.3** Dice **a che ora ci arrivate** e se siete in orario, in ritardo
+      o in anticipo. Se la tappa chiude prima che arriviate, lo dice chiaro.
+- [ ] **16.4** Con la **posizione accesa** compare la distanza in grande e i
+      minuti a piedi. Se è spenta, c'è il link per accenderla.
+- [ ] **16.5** **"Portami lì"** apre le mappe del telefono con il percorso a
+      piedi già impostato.
+- [ ] **16.6** **"Fatta, avanti"** segna la tappa e passa subito alla
+      successiva, senza uscire.
+- [ ] **16.7** In fondo c'è **"poi: ..."** con la tappa dopo.
+- [ ] **16.8** Si chiude **tirandola giù** con il dito, oltre che con la ✕.
+- [ ] **16.9** Funziona **anche oggi**, su un giorno qualsiasi del viaggio: non
+      serve aspettare maggio 2027. (Lezione già pagata col tasto della
+      posizione.)
+- [ ] **16.10** Quando tutte le tappe sono fatte dice **"Giornata finita"**.
+
 ---
 
 ## Cose che ho corretto perché si erano rotte (le stesse prove le fa già la macchina)
@@ -251,7 +291,7 @@ qualcosa di nuovo:
 
 ## La prova automatica
 
-`node _tools/prova.js` — **62 verifiche**, tutte superate al momento della
+`node _tools/prova.js` — **84 verifiche**, tutte superate al momento della
 consegna. Apre l'app vera in un browser e ci si comporta come un dito: cambia
 le cinque pagine, apre e trascina i fogli, salva un preferito e una
 prenotazione, salva un'idea e la pianifica, scrive sul diario, converte gli

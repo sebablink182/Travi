@@ -674,6 +674,12 @@ import {
     document.getElementById("itin-theme").textContent = dayById(selectedDay.itinerario).theme;
     var list = stopsForDay(selectedDay.itinerario);
     renderStatoGiornata(selectedDay.itinerario, list);
+    document.getElementById("stoplist").hidden = vistaItin !== "lista";
+    document.getElementById("striscia").hidden = vistaItin !== "striscia";
+    document.querySelectorAll("#vista-switch .vs-b").forEach(function (b) {
+      b.classList.toggle("sel", b.dataset.vista === vistaItin);
+    });
+    if (vistaItin === "striscia") renderStriscia(list);
     var el = document.getElementById("stoplist");
     el.innerHTML = "";
     list.forEach(function (s) {
@@ -708,6 +714,296 @@ import {
       el.innerHTML = '<div style="text-align:center;color:var(--text-muted);padding:30px 10px;font-size:.85rem;">Nessuna tappa per questo giorno. Aggiungetene una qui sotto.</div>';
     }
   }
+
+  /* ---------- modalità cammino ("adesso") ----------
+     Tutto quello che c'è in questa schermata il motore lo sapeva già. Il punto
+     non è calcolare qualcosa di nuovo: è che mentre si cammina per Kyoto con
+     il telefono in una mano non si legge una lista di dodici tappe. Si guarda
+     UNA cosa: dove sto andando, quanto manca, ce la faccio.
+
+     Due scelte volute:
+     - si apre in QUALSIASI giorno, non solo "oggi". Una funzione che si può
+       provare solo il 12 maggio 2027 arriva rotta in Giappone: è già successo
+       col tasto della posizione. Se il giorno non è oggi si usa l'orario della
+       simulazione, o l'ora della prima tappa.
+     - "Portami lì" apre le mappe del telefono a piedi. Travi sa dov'è la
+       tappa; rifare la navigazione a piedi sarebbe una pessima idea, e
+       Apple/Google la fanno bene. */
+  var adessoEl = document.getElementById("adesso");
+  var adessoTimer = null;
+
+  function oraPerAdesso(giorno) {
+    if (giorno && giorno.date === todayISO()) return oraDiAdesso();
+    if (simula.attiva) return simula.minuti;
+    var list = stopsForDay(selectedDay.itinerario);
+    var prima = list.length ? window.Giornata.min(list[0].time) : null;
+    return prima != null ? prima : 9 * 60;
+  }
+
+  function renderAdesso() {
+    var corpo = document.getElementById("adesso-corpo");
+    var giorno = dayById(selectedDay.itinerario);
+    if (!giorno || !window.Giornata) return;
+    var list = stopsForDay(selectedDay.itinerario);
+    var minuti = oraPerAdesso(giorno);
+    var e = window.Giornata.calcola(list, minuti, window.TRAVI_ORARI, false, posizione || null);
+
+    document.getElementById("ad-orologio").textContent = window.Giornata.hhmm(minuti);
+    document.getElementById("ad-dove").textContent =
+      giorno.city + (giorno.date === todayISO() ? "" : " · " + weekdayShort(giorno.date) + " " + dayNum(giorno.date));
+
+    var restanti = list.filter(function (s) { return !s.done; });
+    if (!restanti.length) {
+      corpo.innerHTML = '<div class="ad-centro"><div class="ad-finita">' +
+        (list.length ? "Giornata finita.<br>Tutto quello che c'era in programma è fatto." :
+                       "Per oggi non c'è niente in programma.") + "</div></div>";
+      return;
+    }
+
+    var prossima = restanti[0];
+    var p = e.previsioni[0] || {};
+    var dopo = restanti[1];
+
+    // La distanza: dalla posizione vera se ce l'abbiamo, altrimenti si dice
+    // che non ce l'abbiamo invece di inventare un numero.
+    var distanza = "";
+    if (e.daQui) {
+      distanza = '<div class="ad-distanza"><b>' + distanzaLeggibile(e.daQui.km) + "</b>" +
+        "<span>" + (e.daQui.aPiedi ? e.daQui.minuti + " min a piedi" : "non a piedi") + "</span></div>";
+    } else {
+      distanza = '<div class="ad-riga"><svg><use href="#ic-gps"/></svg>' +
+        '<button class="ad-gps-on" id="ad-gps-on" style="background:none;border:none;padding:0;color:var(--accent);font-weight:600;font-size:.9rem;cursor:pointer;">Accendi la posizione per sapere quanto manca</button></div>';
+    }
+
+    var classeStato = "bene", testoStato;
+    if (p.verdetto === "chiusa") {
+      classeStato = "tardi";
+      testoStato = "<b>Chiude alle " + p.chiudeOra + "</b> e ci arrivereste alle " + p.arrivoOra + ": non ce la fate. Meglio cambiare.";
+    } else if (p.verdetto === "incompleta") {
+      classeStato = "tardi";
+      testoStato = "Ci arrivate alle " + p.arrivoOra + " ma <b>chiude alle " + p.chiudeOra + "</b>: la vedete solo in parte.";
+    } else if (p.verdetto === "stretta") {
+      classeStato = "";
+      testoStato = "Ci arrivate alle " + p.arrivoOra + ", chiude alle " + p.chiudeOra + ": <b>per un pelo</b>.";
+    } else if (e.ritardo > 15) {
+      classeStato = "tardi";
+      testoStato = "<b>In ritardo di " + e.ritardo + " min.</b> Arrivo previsto alle " + p.arrivoOra + ", invece delle " + prossima.time + ".";
+    } else if (e.ritardo < -15) {
+      testoStato = "<b>In anticipo di " + Math.abs(e.ritardo) + " min.</b> Ci arrivate alle " + p.arrivoOra + ": c'è tempo, con calma.";
+    } else {
+      testoStato = "<b>In orario.</b> Arrivo previsto alle " + p.arrivoOra + ".";
+    }
+
+    var mappe = (prossima.lat != null)
+      ? '<a href="https://maps.apple.com/?daddr=' + prossima.lat + "," + prossima.lon + '&dirflg=w" target="_blank" rel="noopener"><svg width="15" height="15"><use href="#ic-pin"/></svg>Portami lì</a>'
+      : "";
+
+    corpo.innerHTML =
+      '<div class="ad-centro">' +
+        '<div class="ad-etichetta">Prossima tappa</div>' +
+        '<div class="ad-titolo">' + escapeHtml(prossima.title) + "</div>" +
+        '<div class="ad-zona">' + escapeHtml(prossima.sub || "") + "</div>" +
+        distanza +
+        '<div class="ad-stato ' + classeStato + '">' + testoStato + "</div>" +
+        (dopo ? '<div class="ad-poi">poi: <b>' + escapeHtml(dopo.title) + "</b> · " + dopo.time + "</div>" : "") +
+      "</div>" +
+      '<div class="ad-azioni">' +
+        '<button class="ad-primario" id="ad-fatta">Fatta, avanti</button>' +
+        '<div class="ad-secondarie">' +
+          mappe +
+          '<button id="ad-apri">Apri la tappa</button>' +
+        "</div>" +
+      "</div>";
+
+    var fatta = document.getElementById("ad-fatta");
+    stendiInterruttoreAptico(fatta);
+    fatta.addEventListener("click", function () { toggleDone(prossima.id); renderAdesso(); });
+    document.getElementById("ad-apri").addEventListener("click", function () {
+      chiudiAdesso();
+      setTimeout(function () { openSheet(prossima.id); }, 260);
+    });
+    var gpsOn = document.getElementById("ad-gps-on");
+    if (gpsOn) gpsOn.addEventListener("click", function () { accendiGPS(); });
+  }
+
+  function apriAdesso() {
+    renderAdesso();
+    adessoEl.hidden = false;
+    adessoEl.style.transform = "";
+    // due fotogrammi: senza, il browser applica subito lo stato finale e la
+    // schermata compare di scatto invece di salire
+    requestAnimationFrame(function () {
+      requestAnimationFrame(function () { adessoEl.classList.add("show"); });
+    });
+    bloccaSfondo(true);
+    clearInterval(adessoTimer);
+    adessoTimer = setInterval(renderAdesso, 30000); // l'orologio deve muoversi
+  }
+  function chiudiAdesso() {
+    clearInterval(adessoTimer);
+    adessoEl.classList.remove("show");
+    bloccaSfondo(false);
+    setTimeout(function () { adessoEl.hidden = true; }, 340);
+  }
+  document.getElementById("adesso-chiudi").addEventListener("click", chiudiAdesso);
+  document.getElementById("btn-adesso").addEventListener("click", apriAdesso);
+
+  /* ---------- la striscia della giornata ----------
+     Il motore sa da sempre a che ora si arriva dove; finora però l'itinerario
+     lo mostrava come una lista, e una lista nasconde la cosa più importante:
+     le PROPORZIONI. In lista, due ore di tempio e venti minuti di caffè sono
+     due riquadri uguali. Qui no: l'altezza è il tempo, quindi si vede a colpo
+     d'occhio dove ci sono due ore vuote da riempire e dove invece è tutto
+     attaccato senza respiro.
+
+     Regola di disegno: ogni blocco è posizionato sull'orario vero (top =
+     minuti dall'inizio della giornata × scala). Non è una pila: se fosse una
+     pila, le ore scritte a sinistra mentirebbero appena un blocco viene
+     allungato al minimo leggibile. */
+  var vistaItin = "lista";
+  var ALTEZZA_MINIMA_BLOCCO = 30; // px: sotto questo non ci sta nemmeno il titolo
+
+  function scalaStriscia(daMin, aMin) {
+    var durata = Math.max(60, aMin - daMin);
+    // Si prova a far stare la giornata in una schermata, ma senza schiacciare
+    // troppo le giornate lunghe né gonfiare quelle corte.
+    var s = 560 / durata;
+    return Math.max(0.32, Math.min(1.3, s));
+  }
+
+  function renderStriscia(list) {
+    var box = document.getElementById("striscia");
+    box.innerHTML = "";
+    var conOra = list.filter(function (s) { return window.Giornata.min(s.time) != null; });
+    if (!conOra.length) {
+      box.innerHTML = '<div class="striscia-vuota">Per disegnare la striscia servono gli orari delle tappe.<br>Questo giorno non ne ha ancora.</div>';
+      return;
+    }
+
+    // Le previsioni del motore, per segnare dove la realtà si scosta dal piano.
+    var previsioni = {};
+    if (window.Giornata) {
+      var quando = simula.attiva ? simula.minuti : oraDiAdesso();
+      var e = window.Giornata.calcola(list, quando, window.TRAVI_ORARI, false, posizione || null);
+      e.previsioni.forEach(function (p) { previsioni[p.id] = p; });
+    }
+
+    var inizio = window.Giornata.min(conOra[0].time) - (conOra[0].tmin || 0);
+    var ultima = conOra[conOra.length - 1];
+    var fine = window.Giornata.min(ultima.time) + (ultima.dur || 30);
+    inizio = Math.floor(inizio / 60) * 60;
+    fine = Math.ceil(fine / 60) * 60;
+    var scala = scalaStriscia(inizio, fine);
+    var y = function (m) { return (m - inizio) * scala; };
+
+    var corpo = document.createElement("div");
+    corpo.className = "striscia-corpo";
+    corpo.style.height = y(fine) + "px";
+
+    // Le ore, sullo sfondo: sono il righello che rende leggibili le altezze.
+    for (var m = inizio; m <= fine; m += 60) {
+      var linea = document.createElement("div");
+      linea.className = "striscia-linea";
+      linea.style.top = y(m) + "px";
+      corpo.appendChild(linea);
+      var et = document.createElement("div");
+      et.className = "striscia-ora";
+      et.style.top = y(m) + "px";
+      et.textContent = window.Giornata.hhmm(m);
+      corpo.appendChild(et);
+    }
+
+    var precFine = null;
+    conOra.forEach(function (s) {
+      var ini = window.Giornata.min(s.time);
+      var dur = s.dur || 30;
+      var prev = previsioni[s.id];
+
+      // Prima ci si sposta, POI si ha tempo libero: è l'ordine in cui le cose
+      // succedono davvero (si esce, si arriva, e lì si aspetta), ed evita che
+      // l'etichetta dello spostamento vada a sbattere contro il blocco dopo
+      // quando lo spostamento è di pochi minuti e in scala sarebbe alto 5px.
+      if (precFine != null) {
+        var vuoto = ini - precFine;
+        var viaggio = Math.min(s.tmin || 0, Math.max(0, vuoto));
+        if (viaggio > 0) {
+          var v = document.createElement("div");
+          v.className = "sviaggio";
+          v.style.top = y(precFine) + "px";
+          v.style.height = Math.max(13, viaggio * scala) + "px";
+          v.innerHTML = tIconFor(s.tmode) + viaggio + " min";
+          corpo.appendChild(v);
+        }
+        var libero = vuoto - viaggio;
+        var inizioLibero = precFine + Math.max(viaggio, viaggio > 0 ? 13 / scala : 0);
+        if (libero >= 20 && ini - inizioLibero >= 14 / scala) {
+          var b = document.createElement("div");
+          b.className = "sbuco";
+          b.style.top = y(inizioLibero) + "px";
+          b.style.height = (y(ini) - y(inizioLibero) - 2) + "px";
+          b.textContent = durataLeggibile(libero) + " liberi";
+          corpo.appendChild(b);
+        }
+      }
+
+      var el = document.createElement("div");
+      el.className = "sblocco" + (s.done ? " fatta" : "") +
+        (prev && !s.done && prev.verdetto === "stretta" ? " stretta" : "") +
+        (prev && !s.done && (prev.verdetto === "chiusa" || prev.verdetto === "incompleta") ? " chiusa" : "");
+      el.style.top = y(ini) + "px";
+      el.style.height = Math.max(ALTEZZA_MINIMA_BLOCCO, dur * scala - 2) + "px";
+      var avviso = "";
+      if (prev && !s.done) {
+        if (prev.verdetto === "chiusa") avviso = "Chiude alle " + prev.chiudeOra + ": non ci arrivate";
+        else if (prev.verdetto === "incompleta") avviso = "Chiude alle " + prev.chiudeOra + ": non tutta";
+        else if (prev.verdetto === "stretta") avviso = "Per un pelo, chiude alle " + prev.chiudeOra;
+        else if (prev.scarto != null && prev.scarto > 15) avviso = "Ci arrivate alle " + prev.arrivoOra;
+      }
+      var alto = Math.max(ALTEZZA_MINIMA_BLOCCO, dur * scala - 2);
+      el.innerHTML =
+        '<div class="sb-t">' + escapeHtml(s.title) + "</div>" +
+        (alto >= 42 ? '<div class="sb-s">' + s.time + " · " + durataLeggibile(dur) + "</div>" : "") +
+        (avviso && alto >= 62 ? '<div class="sb-avviso">' + escapeHtml(avviso) + "</div>" : "");
+      el.addEventListener("click", function () { openSheet(s.id); });
+      corpo.appendChild(el);
+
+      precFine = ini + dur;
+    });
+
+    box.appendChild(corpo);
+    var leg = document.createElement("div");
+    leg.className = "striscia-legenda";
+    leg.innerHTML =
+      '<i><b style="background:var(--fogblue)"></b>tappa</i>' +
+      '<i><b style="background:var(--amber)"></b>per un pelo</i>' +
+      '<i><b style="background:var(--accent)"></b>non ci arrivate</i>';
+    box.appendChild(leg);
+  }
+
+  function durataLeggibile(m) {
+    if (m < 60) return m + " min";
+    var h = Math.floor(m / 60), r = m % 60;
+    return r ? h + "h " + r + "min" : h + "h";
+  }
+
+  function impostaVistaItin(v) {
+    vistaItin = v;
+    try { localStorage.setItem("travi-vista-itin", v); } catch (e) {}
+    document.querySelectorAll("#vista-switch .vs-b").forEach(function (b) {
+      b.classList.toggle("sel", b.dataset.vista === v);
+    });
+    document.getElementById("stoplist").hidden = v !== "lista";
+    document.getElementById("striscia").hidden = v !== "striscia";
+    renderItinerario();
+  }
+  document.querySelectorAll("#vista-switch .vs-b").forEach(function (b) {
+    stendiInterruttoreAptico(b);
+    b.addEventListener("click", function () { impostaVistaItin(b.dataset.vista); });
+  });
+  try {
+    var vSalvata = localStorage.getItem("travi-vista-itin");
+    if (vSalvata === "striscia" || vSalvata === "lista") vistaItin = vSalvata;
+  } catch (e) {}
 
   // Mappa vera (Leaflet + Stadia Alidade Smooth), a schermo intero. Il giorno
   // mostrato è SEMPRE quello scelto in Itinerario — niente selettore proprio:
@@ -1170,8 +1466,12 @@ import {
      il successivo lo chiude — come ci si aspetta su iPhone. */
   var SOGLIA_CHIUSURA = 120;
 
-  function rendiTrascinabile(sheet, chiudi) {
+  // conSfondo=false per la modalità cammino: copre tutto lo schermo da sola,
+  // dietro non c'è nessuna tendina scura da schiarire mentre si tira giù.
+  function rendiTrascinabile(sheet, chiudi, conSfondo) {
+    if (conSfondo === undefined) conSfondo = true;
     var y0 = 0, dy = 0, trascina = false;
+    var tendina = conSfondo ? backdrop : { style: {}, classList: { add: function () {}, remove: function () {} } };
 
     sheet.addEventListener("touchstart", function (e) {
       if (e.touches.length !== 1) { trascina = false; return; }
@@ -1182,7 +1482,7 @@ import {
       y0 = e.touches[0].clientY;
       dy = 0;
       sheet.style.transition = "none";
-      backdrop.style.transition = "none"; // deve seguire il dito, non arrivare dopo
+      tendina.style.transition = "none"; // deve seguire il dito, non arrivare dopo
     }, { passive: true });
 
     sheet.addEventListener("touchmove", function (e) {
@@ -1192,7 +1492,7 @@ import {
       if (dy > 0) e.preventDefault();
       sheet.style.transform = "translate(-50%, " + dy + "px)";
       var quanto = Math.min(1, Math.max(0, dy / 300));
-      backdrop.style.opacity = String(1 - quanto * 0.9);
+      tendina.style.opacity = String(1 - quanto * 0.9);
     }, { passive: false });
 
     ["touchend", "touchcancel"].forEach(function (ev) {
@@ -1200,16 +1500,16 @@ import {
         if (!trascina) return;
         trascina = false;
         sheet.style.transition = "";
-        backdrop.style.transition = "";
+        tendina.style.transition = "";
         if (dy > SOGLIA_CHIUSURA) {
           // scivola via fino in fondo e poi chiude, senza scatti
           sheet.style.transform = "translate(-50%, 100%)";
-          backdrop.style.opacity = "";
+          tendina.style.opacity = "";
           chiudi();
           setTimeout(function () { sheet.style.transform = ""; }, 320);
         } else {
           sheet.style.transform = "";   // torna al suo posto con la transizione
-          backdrop.style.opacity = "";
+          tendina.style.opacity = "";
         }
         dy = 0;
       });
@@ -2421,6 +2721,7 @@ import {
   rendiTrascinabile(frasiSheet, chiudiFrasi);
   rendiTrascinabile(cambioSheet, chiudiCambio);
   rendiTrascinabile(diarioSheet, chiudiDiario);
+  rendiTrascinabile(adessoEl, chiudiAdesso, false);
 
   /* ---------- toast ---------- */
   var toastTimer = null;

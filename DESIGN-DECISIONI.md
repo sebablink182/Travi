@@ -169,6 +169,37 @@ cadono di **lunedì** (Kanazawa e Osaka) e questo ha escluso i musei ovvi di
 entrambe: l'avviso in cima al gruppo lo dice, invece di far scoprire la porta
 chiusa sul posto.
 
+## ADOTTATO — due modi di guardare la giornata (7 settembre 2026, sera)
+
+Il motore calcolava molto e mostrava poco. Queste due viste non aggiungono
+dati: mostrano quelli che c'erano già, rispondendo a due domande diverse.
+
+- **La striscia** (interruttore in alto a destra in Itinerario). La lista dice
+  COSA c'è; in lista due ore di tempio e venti minuti di caffè sono due
+  riquadri identici. Nella striscia **l'altezza è il tempo**, quindi si vede
+  dove ci sono due ore vuote e dove invece è tutto attaccato. Regola di
+  disegno da non cambiare: i blocchi sono posizionati **in assoluto
+  sull'orario vero** (`top = minuti × scala`), non impilati — se fossero una
+  pila, le ore scritte a sinistra mentirebbero appena un blocco viene alzato
+  al minimo leggibile. Gli spostamenti si disegnano **subito dopo la tappa
+  precedente**, non subito prima della successiva: è l'ordine in cui le cose
+  succedono, e impedisce all'etichetta di sbattere contro il blocco dopo
+  quando lo spostamento in scala sarebbe alto cinque pixel.
+- **La modalità cammino.** La lista è la vista di chi pianifica dal divano.
+  Questa è la vista di chi cammina: una cosa sola, grande, e la risposta
+  all'unica domanda di quel momento — quanto manca e ce la faccio. È a
+  schermo intero e non un foglio, perché per quelle ore **è** l'app. "Portami
+  lì" passa la palla alle mappe del telefono: rifare la navigazione a piedi
+  sarebbe una pessima idea.
+
+Vale per entrambe la regola già pagata cara col tasto della posizione: **si
+aprono in qualsiasi giorno, non solo "oggi"**. Una funzione che si può provare
+soltanto il 12 maggio 2027 arriva rotta in Giappone.
+
+Le cose decise ma non ancora fatte — Claude dentro l'app per rifare una
+giornata da remoto, e il piano B pioggia — stanno in
+**[IDEE-FUTURE.md](IDEE-FUTURE.md)**, col ragionamento già dentro.
+
 Restano da costruire: il Budget come sezione a sé (oggi è un foglio
 richiamato da Home e da Altro) — il documento di architettura originale resta
 valido come piano per quelli.
